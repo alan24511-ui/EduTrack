@@ -42,3 +42,21 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+
+# Entorno virtual de FastAPI
+backend/.venv/
+
+# Variables de entorno y secretos
+backend/.env
+
+# Archivos de pruebas y herramientas
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
