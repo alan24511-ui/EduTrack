@@ -1,0 +1,12 @@
+[33m4f06ca1[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mchato[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/karla[m[33m, [m[1;31morigin/chato[m[33m, [m[1;31morigin/carol[m[33m, [m[1;31morigin/HEAD[m[33m)[m refs/heads/chato@{0}: branch: Created from refs/remotes/origin/chato
+[33m4f06ca1[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mchato[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/karla[m[33m, [m[1;31morigin/chato[m[33m, [m[1;31morigin/carol[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{0}: checkout: moving from main to chato
+[33m6abb4fc[m[33m ([m[1;31morigin/alan[m[33m)[m refs/remotes/origin/alan@{0}: fetch origin: storing head
+[33m4f06ca1[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mchato[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/karla[m[33m, [m[1;31morigin/chato[m[33m, [m[1;31morigin/carol[m[33m, [m[1;31morigin/HEAD[m[33m)[m refs/remotes/origin/carol@{0}: fetch origin: storing head
+[33m4f06ca1[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mchato[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/karla[m[33m, [m[1;31morigin/chato[m[33m, [m[1;31morigin/carol[m[33m, [m[1;31morigin/HEAD[m[33m)[m refs/remotes/origin/chato@{0}: fetch origin: storing head
+[33m4f06ca1[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mchato[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/karla[m[33m, [m[1;31morigin/chato[m[33m, [m[1;31morigin/carol[m[33m, [m[1;31morigin/HEAD[m[33m)[m refs/remotes/origin/karla@{0}: fetch origin: storing head
+[33m4f06ca1[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mchato[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/karla[m[33m, [m[1;31morigin/chato[m[33m, [m[1;31morigin/carol[m[33m, [m[1;31morigin/HEAD[m[33m)[m refs/remotes/origin/main@{0}: fetch origin: fast-forward
+[33m943c9c7[m[33m ([m[1;32mmain[m[33m)[m refs/heads/main@{0}: commit: Respaldo de mis cambios antes de actualizar
+[33m943c9c7[m[33m ([m[1;32mmain[m[33m)[m HEAD@{1}: commit: Respaldo de mis cambios antes de actualizar
+[33mbfadbf2[m refs/heads/main@{1}: clone: from https://github.com/alan24511-ui/EduTrack.git
+[33mbfadbf2[m refs/remotes/origin/HEAD@{0}: clone: from https://github.com/alan24511-ui/EduTrack.git
+[33mbfadbf2[m HEAD@{2}: clone: from https://github.com/alan24511-ui/EduTrack.git
