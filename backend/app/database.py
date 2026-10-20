@@ -6,15 +6,12 @@ import psycopg
 from dotenv import load_dotenv
 
 
-
-# Carga el archivo backend/.env sin depender de la carpeta
-# desde la que se ejecute FastAPI.
+# Buscar el archivo .env dentro de backend/
 ENV_PATH = Path(__file__).resolve().parents[1] / ".env"
 load_dotenv(ENV_PATH)
 
 
 def obtener_conexion():
-    """Abre una conexión con la base de datos PostgreSQL."""
     return psycopg.connect(
         host=os.getenv("DATABASE_HOST", "localhost"),
         port=int(os.getenv("DATABASE_PORT", "5432")),
