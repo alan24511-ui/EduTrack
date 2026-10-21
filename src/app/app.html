@@ -1,15 +1,16 @@
+@if (!sinBarra) {
+  <h1>EduTrack</h1>
 
-<h1>EduTrack</h1>
+  <nav>
+    <a routerLink="/login">Login</a> |
+    <a routerLink="/dashboard">Dashboard</a> |
+    <a routerLink="/estudiantes">Estudiantes</a> |
+    <a routerLink="/tarjetas">Tarjetas</a> |
+    <a routerLink="/historial">Historial</a> |
+    <a routerLink="/admin">Admin</a>
+  </nav>
 
-<nav>
-  <a routerLink="/login">Login</a> |
-  <a routerLink="/dashboard">Dashboard</a> |
-  <a routerLink="/estudiantes">Estudiantes</a> |
-  <a routerLink="/tarjetas">Tarjetas</a> |
-  <a routerLink="/historial">Historial</a>
-  <a routerLink="/admin">Admin</a>
-</nav>
+  <hr>
+}
 
-<hr>
-
-<router-outlet></router-outlet>
+<router-outlet />

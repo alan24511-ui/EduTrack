@@ -1,1 +1,61 @@
-<p>login works!</p>
+<main class="position-relative overflow-hidden min-vh-100 d-flex align-items-center py-4 py-sm-5">
+    <img src="img/fondo.png" alt="" aria-hidden="true" class="position-absolute top-0 start-0 w-100 h-100 object-fit-cover z-0">
+    <div class="container position-relative z-1">
+        <div class="row align-items-center gy-4 gy-lg-0">
+
+            <!-- Izquierda: Branding -->
+            <section class="col-12 col-lg-6 col-xl-7 col-xxl-8 text-white text-center">
+                <div class="d-flex flex-column align-items-center gap-2">
+                    <img src="img/logo_blanco.png" alt="Logotipo AsisTec" width="260" class="img-fluid">
+                    <div class="d-flex flex-column align-items-center">
+                        <h1 class="display-1 fw-bold mb-0">AsisTec</h1>
+                        <p class="fs-4 mb-0 opacity-75">Sistema de Control de Asistencia</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Derecha: Tarjeta de login -->
+            <section class="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-5 col-xxl-4 mx-auto mx-lg-0">
+                <div class="card border-0 rounded-5 shadow">
+                    <div class="card-body p-4 p-sm-5">
+                        <div class="text-center mb-4">
+                            <img src="img/logo_morado.png" alt="Logotipo AsisTec" width="110" height="110" class="mb-2">
+                            <h2 class="fs-4 fw-bold text-primary mb-1">Bienvenido</h2>
+                            <p class="fw-bold text-primary mb-0">Iniciar sesion para continuar</p>
+                        </div>
+
+                        <form (submit)="$event.preventDefault()" class="d-flex flex-column gap-3">
+                            <div>
+                                <label for="email" class="form-label fw-semibold">Correo electronico</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white border-primary border-end-0">
+                                        <img src="img/correo.png" alt="" width="20" height="20">
+                                    </span>
+                                    <input type="email" id="email" class="form-control border-primary border-start-0 py-3" placeholder="usuario@cbtis75.edu.mx" required>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label for="password" class="form-label fw-semibold">Contraseña</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white border-primary border-end-0">
+                                        <img src="img/candado.png" alt="" width="20" height="20">
+                                    </span>
+                                    <input type="password" id="password" #pwd class="form-control border-primary border-start-0 border-end-0 py-3" placeholder="Ingresa tu contraseña" required>
+                                    <button type="button" id="togglePassword" class="btn bg-white border border-primary border-start-0" (click)="pwd.type = pwd.type === 'password' ? 'text' : 'password'" aria-label="Mostrar u ocultar contraseña">
+                                        <img src="img/ojo.png" alt="" width="20" height="20" class="eye-icon" [class.opacity-50]="pwd.type === 'text'">
+                                    </button>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100 py-3 fw-semibold mt-1">Iniciar sesión</button>
+
+                            <a href="#" class="link-primary link-underline-opacity-0 link-underline-opacity-100-hover fw-bold text-center">¿Olvidaste tu contraseña?</a>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </div>
+</main>
