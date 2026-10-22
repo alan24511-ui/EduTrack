@@ -24,8 +24,8 @@
                             <p class="fw-bold text-primary mb-0">Iniciar sesion para continuar</p>
                         </div>
 
-                        <form (submit)="$event.preventDefault()" class="d-flex flex-column gap-3">
-                            <div>
+                                <form (ngSubmit)="iniciarSesion()" class="d-flex flex-column gap-3">
+                        <div>
                                 <label for="email" class="form-label fw-semibold">Correo electronico</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-white border-primary border-end-0">
