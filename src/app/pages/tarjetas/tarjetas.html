@@ -1,0 +1,102 @@
+<app-layout>
+    <div class="p-4 p-lg-5 text-primary">
+
+        <!-- Encabezado -->
+        <header class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3 mb-4">
+            <div>
+                <h2 class="fs-2 fw-bolder mb-1">Tarjetas RFID/NFC</h2>
+                <p class="fs-5 fw-medium mb-0">Asocia credenciales con los alumnos registrados</p>
+            </div>
+            <!-- Campana y usuario: solo en móvil, como en el diseño original -->
+            <div class="d-flex d-sm-none align-items-center gap-2 align-self-end">
+                <button type="button" class="btn border-0 p-1" aria-label="Notificaciones">
+                    <img src="img/v38_80.png" alt="" width="24" height="24">
+                </button>
+                <span class="d-inline-block rounded-circle text-bg-primary fw-bold p-2">US</span>
+            </div>
+        </header>
+
+        <!-- Estado del lector y resultado -->
+        <section class="row row-cols-1 row-cols-xl-2 g-3 mb-3">
+            <div class="col">
+                <div class="card h-100 rounded-4 shadow-sm">
+                    <div class="card-body d-flex flex-column gap-3 p-4">
+                        <div class="d-flex flex-column align-items-center justify-content-center text-center flex-grow-1">
+                            <img src="img/nfc.png" alt="NFC" width="60" class="mb-3">
+                            <h3 class="fs-4 fw-bolder mb-2">Acerca la credencial al lector</h3>
+                            <p class="mb-3">El lector está listo para detectar la tarjeta</p>
+                            <span class="fs-5 fw-semibold text-success">Lector conectado</span>
+                        </div>
+                        <button type="button" class="btn btn-primary btn-lg rounded-3 fw-bold w-100">Esperando credencial</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col">
+                <div class="card h-100 rounded-4 shadow-sm">
+                    <div class="card-body d-flex flex-column gap-3 p-4">
+                        <div class="d-flex align-items-center justify-content-center gap-2">
+                            <img src="img/v42_13.png" alt="" width="24" height="24">
+                            <span class="fs-5 fw-bold text-success">Credencial detectada</span>
+                        </div>
+
+                        <div class="d-flex flex-column gap-3 flex-grow-1">
+                            <div>
+                                <span class="d-block small text-secondary">UID de la tarjeta</span>
+                                <span id="detalle-uid" class="d-block fs-5 fw-bold font-monospace">&nbsp;</span>
+                            </div>
+                            <div>
+                                <span class="d-block small text-secondary">Alumno asociado</span>
+                                <span id="detalle-alumno" class="d-block fw-bolder">&nbsp;</span>
+                            </div>
+                            <div>
+                                <span class="d-block small text-secondary">Tipo de tarjeta</span>
+                                <span id="detalle-tipo" class="d-block fw-bolder">&nbsp;</span>
+                            </div>
+                        </div>
+
+                        <button type="button" class="btn btn-outline-primary btn-lg rounded-3 fw-bold w-100">Copiar UID</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Acciones -->
+        <div class="d-flex flex-column flex-md-row justify-content-center gap-3 my-4">
+            <button type="button" class="btn btn-primary btn-lg rounded-3 fw-bold px-5">Asociar alumno</button>
+            <button type="button" class="btn btn-outline-primary btn-lg rounded-3 fw-bold px-5">Cancelar</button>
+        </div>
+
+        <!-- Credenciales registradas -->
+        <section class="card rounded-4 shadow-sm">
+            <div class="card-body p-4">
+                <div class="row g-3 align-items-center justify-content-between mb-4">
+                    <div class="col-12 col-md-auto">
+                        <h3 class="fs-4 fw-bolder mb-0">Credenciales registradas</h3>
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-5 col-xl-4 d-none d-sm-block">
+                        <div class="position-relative">
+                            <img src="img/v38_81.png" alt="" width="20" height="20" class="position-absolute top-50 start-0 translate-middle-y ms-3 opacity-50 pe-none">
+                            <input type="text" class="form-control border-primary-subtle rounded-3 py-2 ps-5" placeholder="Buscar...." aria-label="Buscar credenciales">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle text-nowrap mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="text-primary fw-bolder">UID</th>
+                                <th class="text-primary fw-bolder">Alumno</th>
+                                <th class="text-primary fw-bolder">Fecha de registro</th>
+                                <th class="text-primary fw-bolder">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-credenciales"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </div>
+</app-layout>

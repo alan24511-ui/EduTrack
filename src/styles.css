@@ -1,1 +1,61 @@
-/* You can add global styles to this file, and also import other style files */
+
+/* Colores AsisTec para el dashboard */
+:root {
+  --bs-primary: #482e83;
+  --bs-primary-rgb: 72, 46, 131;
+  --bs-success: #3cdb7f;
+  --bs-success-rgb: 60, 219, 127;
+  --bs-warning: #ffae00;
+  --bs-warning-rgb: 255, 174, 0;
+  --bs-danger: #ef3232;
+  --bs-danger-rgb: 239, 50, 50;
+  --bs-tertiary-bg: #f5f2ff;
+}
+
+/* Forzar el morado */
+.bg-primary {
+  background-color: #482e83 !important;
+}
+
+.text-primary {
+  color: #482e83 !important;
+}
+
+/* Colores de las estadísticas */
+.text-success {
+  color: #3cdb7f !important;
+}
+
+.text-warning {
+  color: #ffae00 !important;
+}
+
+.text-danger {
+  color: #ef3232 !important;
+}
+
+/* Fondo y bordes */
+.bg-body-tertiary {
+  background-color: #f5f2ff !important;
+}
+
+.card {
+  --bs-card-border-color: #dccff3;
+}
+
+/* Encabezado de la tabla */
+.table-light {
+  --bs-table-bg: #ede6f9;
+  --bs-table-border-color: #dccff3;
+}
+
+/* Botones */
+.btn-primary {
+  background-color: #482e83;
+  border-color: #482e83;
+}
+
+.btn-primary:hover {
+  background-color: #2b1d49;
+  border-color: #2b1d49;
+}

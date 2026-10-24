@@ -1,0 +1,30 @@
+<div class="d-flex align-items-center gap-3 px-4 mb-2 mb-md-4">
+    <img src="img/logo_blanco.png" alt="Logotipo AsisTec" width="80" class="img-fluid">
+    <h1 class="fs-3 fw-normal mb-0">AsisTec</h1>
+</div>
+
+<nav class="nav flex-row flex-nowrap flex-md-column overflow-x-auto flex-grow-1 align-content-start">
+    @for (item of items; track item.texto) {
+        @if (item.ruta) {
+            <a [routerLink]="item.ruta" routerLinkActive="bg-white bg-opacity-25" ariaCurrentWhenActive="page"
+                class="nav-link text-white text-nowrap fw-semibold d-flex align-items-center gap-3 px-4 py-2">
+                <img [src]="item.icono" alt="" width="24" height="24">
+                <span>{{ item.texto }}</span>
+            </a>
+        } @else {
+            <a role="button" tabindex="0"
+                class="nav-link text-white text-nowrap fw-semibold d-flex align-items-center gap-3 px-4 py-2">
+                <img [src]="item.icono" alt="" width="24" height="24">
+                <span>{{ item.texto }}</span>
+            </a>
+        }
+    }
+</nav>
+
+<div class="d-none d-md-flex align-items-center gap-3 px-4 pt-3 border-top border-white border-opacity-10">
+    <img src="img/v38_56.png" alt="" width="40" height="40" class="rounded-circle bg-white bg-opacity-25">
+    <div class="d-flex flex-column text-break">
+        <span class="fw-semibold">Usuario</span>
+        <span class="small opacity-50">usuario@cbtis75.edu.mx</span>
+    </div>
+</div>

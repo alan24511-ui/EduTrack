@@ -1,0 +1,51 @@
+<app-layout>
+    <div class="p-4 p-lg-5 text-primary">
+
+        <!-- Encabezado -->
+        <header class="mb-4 mb-lg-5">
+            <h2 class="fs-2 fw-bolder mb-1">Inicio</h2>
+            <p class="fs-5 fw-medium mb-0">Bienvenido al sistema de control de asistencia</p>
+        </header>
+
+        <!-- Accesos a las secciones -->
+        <section class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3">
+            <div class="col">
+                <a routerLink="/admin" class="card h-100 rounded-4 shadow-sm text-decoration-none text-primary">
+                    <div class="card-body d-flex flex-column gap-3 p-4">
+                        <img src="img/v42_4.png" alt="" width="40" height="40">
+                        <span class="fs-5 fw-bolder">Panel de administración</span>
+                        <span class="fw-medium">Resumen general de asistencia</span>
+                    </div>
+                </a>
+            </div>
+            <div class="col">
+                <a routerLink="/estudiantes" class="card h-100 rounded-4 shadow-sm text-decoration-none text-primary">
+                    <div class="card-body d-flex flex-column gap-3 p-4">
+                        <img src="img/v38_51.png" alt="" width="40" height="40">
+                        <span class="fs-5 fw-bolder">Estudiantes</span>
+                        <span class="fw-medium">Administra la información de los alumnos</span>
+                    </div>
+                </a>
+            </div>
+            <div class="col">
+                <a routerLink="/tarjetas" class="card h-100 rounded-4 shadow-sm text-decoration-none text-primary">
+                    <div class="card-body d-flex flex-column gap-3 p-4">
+                        <img src="img/v38_52.png" alt="" width="40" height="40">
+                        <span class="fs-5 fw-bolder">Tarjetas RFID/NFC</span>
+                        <span class="fw-medium">Asocia credenciales con los alumnos</span>
+                    </div>
+                </a>
+            </div>
+            <div class="col">
+                <a routerLink="/historial" class="card h-100 rounded-4 shadow-sm text-decoration-none text-primary">
+                    <div class="card-body d-flex flex-column gap-3 p-4">
+                        <img src="img/v38_53.png" alt="" width="40" height="40">
+                        <span class="fs-5 fw-bolder">Historial</span>
+                        <span class="fw-medium">Registros de asistencia</span>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+    </div>
+</app-layout>
