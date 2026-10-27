@@ -6,7 +6,7 @@ import psycopg
 from dotenv import load_dotenv
 
 
-# Buscar el archivo .env dentro de backend/
+# Localizar backend/.env
 ENV_PATH = Path(__file__).resolve().parents[1] / ".env"
 load_dotenv(ENV_PATH)
 
@@ -18,5 +18,5 @@ def obtener_conexion():
         dbname=os.getenv("DATABASE_NAME", "edutrack"),
         user=os.getenv("DATABASE_USER", "postgres"),
         password=os.getenv("DATABASE_PASSWORD", ""),
-        connect_timeout=5,
+        connect_timeout=10,
     )
