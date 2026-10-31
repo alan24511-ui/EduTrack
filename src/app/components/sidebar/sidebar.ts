@@ -1,5 +1,8 @@
 import { Component } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { inject } from '@angular/core';
+
+import { AuthService } from '../../services/auth.service';
 
 interface ItemMenu {
   texto: string;
@@ -16,8 +19,10 @@ interface ItemMenu {
   },
 })
 export class Sidebar {
+  private readonly auth = inject(AuthService);
+
   // Reportes y Configuración todavía no tienen ruta.
-  readonly items: ItemMenu[] = [
+  private readonly itemsAdministrador: ItemMenu[] = [
     { texto: 'Inicio', icono: 'img/v38_50.png', ruta: '/admin' },
     { texto: 'Estudiantes', icono: 'img/v38_51.png', ruta: '/estudiantes' },
     { texto: 'Tarjetas', icono: 'img/v38_52.png', ruta: '/tarjetas' },
@@ -25,4 +30,8 @@ export class Sidebar {
     { texto: 'Reportes', icono: 'img/v38_54.png' },
     { texto: 'Configuración', icono: 'img/v38_55.png' },
   ];
+
+  get items(): ItemMenu[] {
+    return this.auth.rol() === 'administrador' ? this.itemsAdministrador : [];
+  }
 }

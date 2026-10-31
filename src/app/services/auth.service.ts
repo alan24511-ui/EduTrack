@@ -11,6 +11,13 @@ export interface Tutor {
   correo: string;
 }
 
+export type RolUsuario = 'administrador' | 'tutor';
+
+export interface PerfilUsuario {
+  tutor: Tutor | null;
+  rol: RolUsuario;
+}
+
 export interface Sesion {
   access_token: string;
   refresh_token: string | null;
@@ -34,6 +41,7 @@ export interface RespuestaLogin {
   sesion: Sesion;
   tutor: Tutor | null;
   requiere_vinculacion: boolean;
+  rol: RolUsuario;
 }
 
 export const CLAVE_ACCESS_TOKEN = 'edutrack.access_token';
@@ -46,6 +54,7 @@ export class AuthService {
 
   /** Tutor autenticado (null si no hay sesión). */
   readonly tutor = signal<Tutor | null>(this.leerTutorGuardado());
+  readonly rol = signal<RolUsuario | null>(null);
 
   constructor(private readonly http: HttpClient) {}
 
@@ -64,6 +73,7 @@ export class AuthService {
         tap((respuesta) => {
           this.guardarSesion(respuesta.sesion);
           this.guardarTutor(respuesta.tutor);
+          this.rol.set('tutor');
         }),
       );
   }
@@ -75,14 +85,20 @@ export class AuthService {
         tap((respuesta) => {
           this.guardarSesion(respuesta.sesion);
           this.guardarTutor(respuesta.tutor);
+          this.rol.set(respuesta.rol);
         }),
       );
   }
 
-  cargarPerfil(): Observable<{ tutor: Tutor }> {
+  cargarPerfil(): Observable<PerfilUsuario> {
     return this.http
-      .get<{ tutor: Tutor }>(`${this.apiUrl}/me`)
-      .pipe(tap((respuesta) => this.guardarTutor(respuesta.tutor)));
+      .get<PerfilUsuario>(`${this.apiUrl}/me`)
+      .pipe(
+        tap((respuesta) => {
+          this.guardarTutor(respuesta.tutor);
+          this.rol.set(respuesta.rol);
+        }),
+      );
   }
 
   cerrarSesion(): Observable<{ mensaje: string }> {
@@ -96,6 +112,7 @@ export class AuthService {
     this.borrarClave(CLAVE_REFRESH_TOKEN);
     this.borrarClave(CLAVE_TUTOR);
     this.tutor.set(null);
+    this.rol.set(null);
   }
 
   obtenerToken(): string | null {

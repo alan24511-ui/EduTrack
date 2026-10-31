@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { Tarjetas } from './tarjetas';
 
@@ -9,7 +10,7 @@ describe('Tarjetas', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [Tarjetas],
-      providers: [provideRouter([])],
+      providers: [provideRouter([]), provideHttpClient()],
     })
       .compileComponents();
 

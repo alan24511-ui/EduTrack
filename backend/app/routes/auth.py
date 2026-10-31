@@ -13,7 +13,7 @@ from psycopg import Error as PsycopgError
 
 from app.database import obtener_conexion
 from app.schemas import LoginEntrada, RegistroTutorEntrada, VerificacionOTPEntrada
-from app.security import usuario_actual, usuario_verificado
+from app.security import es_administrador, usuario_actual, usuario_verificado
 from app import supabase_auth
 
 router = APIRouter(prefix="/auth", tags=["Autenticación"])
@@ -140,6 +140,7 @@ def iniciar_sesion(datos: LoginEntrada):
     try:
         tutor = _crear_tutor_si_no_existe(auth_user_id, nombre, datos.correo)
         requiere_vinculacion = not _tiene_estudiante_vinculado(tutor["idTutor"])
+        rol = "administrador" if es_administrador(auth_user_id) else "tutor"
     except PsycopgError:
         raise HTTPException(
             status_code=500,
@@ -150,6 +151,7 @@ def iniciar_sesion(datos: LoginEntrada):
         "sesion": _sesion_desde_respuesta(resultado),
         "tutor": tutor,
         "requiere_vinculacion": requiere_vinculacion,
+        "rol": rol,
     }
 
 
@@ -162,12 +164,13 @@ def perfil(usuario: dict = Depends(usuario_verificado)):
             status_code=500,
             detail="No fue posible consultar los datos del tutor.",
         )
-    if tutor is None:
+    rol = "administrador" if es_administrador(usuario["id"]) else "tutor"
+    if tutor is None and rol != "administrador":
         raise HTTPException(
-            status_code=404,
-            detail="No existe un tutor asociado a esta cuenta.",
+            status_code=403,
+            detail="La cuenta no tiene un rol autorizado.",
         )
-    return {"tutor": tutor}
+    return {"tutor": tutor, "rol": rol}
 
 
 @router.post("/logout", summary="Cerrar sesión")

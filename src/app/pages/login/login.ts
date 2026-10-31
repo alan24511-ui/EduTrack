@@ -31,7 +31,7 @@ export class Login {
     this.auth.iniciarSesion(this.correo, this.password).subscribe({
       next: (respuesta) => {
         this.cargando.set(false);
-        this.router.navigate([respuesta.requiere_vinculacion ? '/vinculacion' : '/admin']);
+        this.router.navigate([respuesta.rol === 'administrador' ? '/admin' : '/vinculacion']);
       },
       error: (error) => {
         this.cargando.set(false);

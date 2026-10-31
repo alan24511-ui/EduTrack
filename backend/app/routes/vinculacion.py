@@ -16,38 +16,9 @@ from app.codigos import generar_codigo, hashear_codigo, normalizar_codigo
 from app.config import obtener_settings
 from app.database import obtener_conexion
 from app.schemas import ConfirmacionVinculacionEntrada, ConsultaCodigoEntrada, GenerarCodigoEntrada
-from app.security import usuario_verificado
+from app.security import usuario_administrador, usuario_verificado
 
 router = APIRouter(prefix="/vinculacion", tags=["Vinculación"])
-
-
-def _es_administrador(auth_user_id: str) -> bool:
-    try:
-        with obtener_conexion() as conexion:
-            with conexion.cursor() as cursor:
-                cursor.execute(
-                    'SELECT 1 FROM "Administradores" WHERE auth_user_id = %s',
-                    (auth_user_id,),
-                )
-                return cursor.fetchone() is not None
-    except PsycopgError:
-        raise HTTPException(
-            status_code=500,
-            detail=(
-                'No se pudo comprobar si la cuenta es administrador '
-                '("Administradores" no existe o no es accesible).'
-            ),
-        )
-
-
-def _verificar_puede_generar_codigos(auth_user_id: str) -> None:
-    if not obtener_settings().vinculacion_generacion_solo_admin:
-        return
-    if not _es_administrador(auth_user_id):
-        raise HTTPException(
-            status_code=403,
-            detail="Solo un administrador puede generar códigos de vinculación.",
-        )
 
 
 def _obtener_id_tutor(auth_user_id: str) -> int:
@@ -69,10 +40,8 @@ def _obtener_id_tutor(auth_user_id: str) -> int:
 @router.post("/codigos", summary="Generar un código de vinculación (administrador)")
 def generar_codigo_vinculacion(
     datos: GenerarCodigoEntrada,
-    usuario: dict = Depends(usuario_verificado),
+    usuario: dict = Depends(usuario_administrador),
 ):
-    _verificar_puede_generar_codigos(usuario["id"])
-
     minutos = obtener_settings().vinculacion_codigo_expiracion_minutos
     matricula = datos.matricula.strip()
 

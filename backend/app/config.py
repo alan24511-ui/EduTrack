@@ -28,10 +28,6 @@ class Settings(BaseSettings):
     # --- Vinculación ---
     # Minutos que un código de vinculación permanece válido desde su creación.
     vinculacion_codigo_expiracion_minutos: int = 15
-    # Si es True solo los usuarios presentes en la tabla "Administradores"
-    # pueden generar códigos. Ponlo en False únicamente en pruebas locales.
-    vinculacion_generacion_solo_admin: bool = True
-
     # --- CORS ---
     cors_origins: str = "http://localhost:4200"
 

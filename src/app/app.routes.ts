@@ -9,17 +9,18 @@ import { Estudiantes } from './pages/estudiantes/estudiantes';
 import { Tarjetas } from './pages/tarjetas/tarjetas';
 import { Historial } from './pages/historial/historial';
 import { Admin } from './pages/admin/admin';
+import { adminGuard, authGuard } from './guards/role.guards';
 
 export const routes: Routes = [
   { path: 'login', component: Login },
   { path: 'registro', component: Registro },
   { path: 'verificar-otp', component: VerificarOtp },
-  { path: 'vinculacion', component: Vinculacion },
-  { path: 'dashboard', component: Dashboard },
-  { path: 'estudiantes', component: Estudiantes },
-  { path: 'tarjetas', component: Tarjetas },
-  { path: 'historial', component: Historial },
-  { path: 'admin', component: Admin },
+  { path: 'vinculacion', component: Vinculacion, canActivate: [authGuard] },
+  { path: 'dashboard', component: Dashboard, canActivate: [adminGuard] },
+  { path: 'estudiantes', component: Estudiantes, canActivate: [adminGuard] },
+  { path: 'tarjetas', component: Tarjetas, canActivate: [adminGuard] },
+  { path: 'historial', component: Historial, canActivate: [adminGuard] },
+  { path: 'admin', component: Admin, canActivate: [adminGuard] },
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: '**', redirectTo: 'login' }
 ];
