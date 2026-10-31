@@ -25,13 +25,18 @@
                         </div>
 
                                 <form (ngSubmit)="iniciarSesion()" class="d-flex flex-column gap-3">
+                        @if (error()) {
+                            <div class="alert alert-danger rounded-3 fw-semibold mb-0" role="alert">
+                                {{ error() }}
+                            </div>
+                        }
                         <div>
                                 <label for="email" class="form-label fw-semibold">Correo electronico</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-white border-primary border-end-0">
                                         <img src="img/correo.png" alt="" width="20" height="20">
                                     </span>
-                                    <input type="email" id="email" class="form-control border-primary border-start-0 py-3" placeholder="usuario@cbtis75.edu.mx" required>
+                                    <input type="email" id="email" name="email" [(ngModel)]="correo" class="form-control border-primary border-start-0 py-3" placeholder="usuario@cbtis75.edu.mx" required>
                                 </div>
                             </div>
 
@@ -41,14 +46,18 @@
                                     <span class="input-group-text bg-white border-primary border-end-0">
                                         <img src="img/candado.png" alt="" width="20" height="20">
                                     </span>
-                                    <input type="password" id="password" #pwd class="form-control border-primary border-start-0 border-end-0 py-3" placeholder="Ingresa tu contraseña" required>
+                                    <input type="password" id="password" name="password" [(ngModel)]="password" #pwd class="form-control border-primary border-start-0 border-end-0 py-3" placeholder="Ingresa tu contraseña" required>
                                     <button type="button" id="togglePassword" class="btn bg-white border border-primary border-start-0" (click)="pwd.type = pwd.type === 'password' ? 'text' : 'password'" aria-label="Mostrar u ocultar contraseña">
                                         <img src="img/ojo.png" alt="" width="20" height="20" class="eye-icon" [class.opacity-50]="pwd.type === 'text'">
                                     </button>
                                 </div>
                             </div>
 
-                            <button type="submit" class="btn btn-primary w-100 py-3 fw-semibold mt-1">Iniciar sesión</button>
+                            <button type="submit" class="btn btn-primary w-100 py-3 fw-semibold mt-1" [disabled]="cargando()">
+                                {{ cargando() ? 'Iniciando sesión...' : 'Iniciar sesión' }}
+                            </button>
+
+                            <a routerLink="/registro" class="link-primary link-underline-opacity-0 link-underline-opacity-100-hover fw-bold text-center">Crear cuenta de tutor</a>
 
                             <a href="#" class="link-primary link-underline-opacity-0 link-underline-opacity-100-hover fw-bold text-center">¿Olvidaste tu contraseña?</a>
                         </form>

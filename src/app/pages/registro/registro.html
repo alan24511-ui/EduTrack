@@ -1,0 +1,66 @@
+<main class="position-relative overflow-hidden min-vh-100 d-flex align-items-center py-4 py-sm-5">
+    <img src="img/fondo.png" alt="" aria-hidden="true" class="position-absolute top-0 start-0 w-100 h-100 object-fit-cover z-0">
+    <div class="container position-relative z-1">
+        <div class="row justify-content-center">
+            <div class="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-5">
+
+                <div class="card border-0 rounded-5 shadow">
+                    <div class="card-body p-4 p-sm-5">
+                        <div class="text-center mb-4">
+                            <img src="img/logo_morado.png" alt="Logotipo AsisTec" width="110" height="110" class="mb-2">
+                            <h2 class="fs-4 fw-bold text-primary mb-1">Crear cuenta de tutor</h2>
+                            <p class="fw-bold text-primary mb-0">Regístrate para vincular a tu estudiante</p>
+                        </div>
+
+                        @if (error()) {
+                            <div class="alert alert-danger rounded-3 fw-semibold" role="alert">
+                                {{ error() }}
+                            </div>
+                        }
+
+                        <form (ngSubmit)="registrar()" class="d-flex flex-column gap-3">
+                            <div>
+                                <label for="nombre" class="form-label fw-semibold">Nombre completo</label>
+                                <input type="text" id="nombre" name="nombre" [(ngModel)]="nombre"
+                                    class="form-control border-primary py-3" placeholder="Nombre del tutor" required>
+                            </div>
+
+                            <div>
+                                <label for="correo" class="form-label fw-semibold">Correo electrónico</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white border-primary border-end-0">
+                                        <img src="img/correo.png" alt="" width="20" height="20">
+                                    </span>
+                                    <input type="email" id="correo" name="correo" [(ngModel)]="correo"
+                                        class="form-control border-primary border-start-0 py-3"
+                                        placeholder="usuario@cbtis75.edu.mx" required>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label for="password" class="form-label fw-semibold">Contraseña</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white border-primary border-end-0">
+                                        <img src="img/candado.png" alt="" width="20" height="20">
+                                    </span>
+                                    <input type="password" id="password" name="password" [(ngModel)]="password"
+                                        class="form-control border-primary border-start-0 py-3"
+                                        placeholder="Mínimo 8 caracteres" minlength="8" required>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100 py-3 fw-semibold mt-1" [disabled]="cargando()">
+                                {{ cargando() ? 'Creando cuenta...' : 'Crear cuenta' }}
+                            </button>
+
+                            <a routerLink="/login" class="link-primary link-underline-opacity-0 link-underline-opacity-100-hover fw-bold text-center">
+                                ¿Ya tienes cuenta? Inicia sesión
+                            </a>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</main>
