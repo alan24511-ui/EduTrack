@@ -18,6 +18,11 @@ export interface PerfilUsuario {
   rol: RolUsuario;
 }
 
+export interface RespuestaRenovacion {
+  sesion: Sesion;
+  usuario_id: string | null;
+}
+
 export interface Sesion {
   access_token: string;
   refresh_token: string | null;
@@ -76,6 +81,33 @@ export class AuthService {
           this.rol.set('tutor');
         }),
       );
+  }
+
+  reenviarOtp(correo: string, tipo: 'signup' | 'recovery' = 'signup') {
+    return this.http.post<{ mensaje: string }>(`${this.apiUrl}/resend-otp`, { correo, tipo });
+  }
+
+  solicitarRecuperacion(correo: string) {
+    return this.http.post<{ mensaje: string }>(`${this.apiUrl}/recover`, { correo });
+  }
+
+  restablecerPassword(correo: string, token: string, nueva_password: string) {
+    return this.http.post<{ mensaje: string }>(`${this.apiUrl}/reset-password`, {
+      correo,
+      token,
+      nueva_password,
+    });
+  }
+
+  renovarSesion(): Observable<RespuestaRenovacion> {
+    const refresh_token = this.leerClave(CLAVE_REFRESH_TOKEN);
+    if (!refresh_token) {
+      this.limpiarSesion();
+      throw new Error('No hay una sesión renovable.');
+    }
+    return this.http.post<RespuestaRenovacion>(`${this.apiUrl}/refresh`, { refresh_token }).pipe(
+      tap(({ sesion }) => this.guardarSesion(sesion)),
+    );
   }
 
   iniciarSesion(correo: string, password: string): Observable<RespuestaLogin> {

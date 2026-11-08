@@ -12,7 +12,9 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from psycopg import Error as PsycopgError
 
 from app.database import obtener_conexion
-from app.schemas import LoginEntrada, RegistroTutorEntrada, VerificacionOTPEntrada
+from app.schemas import (CorreoEntrada, LoginEntrada, RecuperacionPasswordEntrada,
+                         RegistroTutorEntrada, RenovacionSesionEntrada,
+                         ReenvioOTPEntrada, VerificacionOTPEntrada)
 from app.security import es_administrador, usuario_actual, usuario_verificado
 from app import supabase_auth
 
@@ -122,6 +124,36 @@ def verificar_otp(datos: VerificacionOTPEntrada):
         "sesion": _sesion_desde_respuesta(resultado),
         "tutor": tutor,
     }
+
+
+@router.post("/resend-otp", summary="Reenviar OTP de registro o recuperación")
+def reenviar_codigo(datos: ReenvioOTPEntrada):
+    supabase_auth.reenviar_otp(datos.correo, datos.tipo)
+    return {"mensaje": "Si la solicitud es válida, se enviará un nuevo código."}
+
+
+@router.post("/recover", summary="Solicitar recuperación de contraseña")
+def recuperar_password(datos: CorreoEntrada):
+    # Respuesta neutra para no revelar si el correo tiene una cuenta.
+    supabase_auth.solicitar_recuperacion(datos.correo)
+    return {"mensaje": "Si la cuenta existe, recibirás instrucciones por correo."}
+
+
+@router.post("/reset-password", summary="Verificar OTP y establecer contraseña nueva")
+def restablecer_password(datos: RecuperacionPasswordEntrada):
+    sesion = supabase_auth.verificar_otp(datos.correo, datos.token, tipo="recovery")
+    access_token = sesion.get("access_token")
+    if not access_token:
+        raise HTTPException(status_code=400, detail="No fue posible verificar el código.")
+    supabase_auth.actualizar_password(access_token, datos.nueva_password)
+    return {"mensaje": "Contraseña actualizada. Ya puedes iniciar sesión."}
+
+
+@router.post("/refresh", summary="Renovar sesión")
+def renovar(datos: RenovacionSesionEntrada):
+    resultado = supabase_auth.renovar_sesion(datos.refresh_token)
+    usuario = resultado.get("user") or {}
+    return {"sesion": _sesion_desde_respuesta(resultado), "usuario_id": usuario.get("id")}
 
 
 @router.post("/login", summary="Iniciar sesión")

@@ -25,7 +25,9 @@ def _url_base() -> str:
 
 def _clave_api() -> str:
     settings = obtener_settings()
-    clave = settings.supabase_anon_key or settings.supabase_service_role_key
+    # GoTrue client calls require only the public anon key. Never substitute a
+    # service_role key: authentication features do not need elevated privileges.
+    clave = settings.supabase_anon_key
     if not clave:
         raise HTTPException(
             status_code=500,
@@ -68,13 +70,58 @@ def registrar_usuario(correo: str, password: str, nombre: str) -> dict:
     return _procesar(respuesta)
 
 
-def verificar_otp(correo: str, token: str) -> dict:
-    """Verifica el código OTP enviado al correo durante el registro."""
+def verificar_otp(correo: str, token: str, tipo: str = "signup") -> dict:
+    """Verifica el código OTP para registro (signup) o recuperación."""
     with httpx.Client(timeout=TIEMPO_ESPERA) as cliente:
         respuesta = cliente.post(
             f"{_url_base()}/verify",
             headers=_encabezados(),
-            json={"type": "signup", "email": correo, "token": token},
+            json={"type": tipo, "email": correo, "token": token},
+        )
+    return _procesar(respuesta)
+
+
+def reenviar_otp(correo: str, tipo: str) -> dict:
+    """Solicita a Supabase un nuevo código de registro o recuperación."""
+    with httpx.Client(timeout=TIEMPO_ESPERA) as cliente:
+        respuesta = cliente.post(
+            f"{_url_base()}/resend",
+            headers=_encabezados(),
+            json={"type": tipo, "email": correo},
+        )
+    return _procesar(respuesta)
+
+
+def solicitar_recuperacion(correo: str) -> dict:
+    """Solicita el correo de recuperación de contraseña."""
+    with httpx.Client(timeout=TIEMPO_ESPERA) as cliente:
+        respuesta = cliente.post(
+            f"{_url_base()}/recover",
+            headers=_encabezados(),
+            json={"email": correo},
+        )
+    return _procesar(respuesta)
+
+
+def renovar_sesion(refresh_token: str) -> dict:
+    """Intercambia un refresh token por una sesión vigente."""
+    with httpx.Client(timeout=TIEMPO_ESPERA) as cliente:
+        respuesta = cliente.post(
+            f"{_url_base()}/token",
+            params={"grant_type": "refresh_token"},
+            headers=_encabezados(),
+            json={"refresh_token": refresh_token},
+        )
+    return _procesar(respuesta)
+
+
+def actualizar_password(access_token: str, nueva_password: str) -> dict:
+    """Actualiza la contraseña con la sesión de recovery verificada."""
+    with httpx.Client(timeout=TIEMPO_ESPERA) as cliente:
+        respuesta = cliente.put(
+            f"{_url_base()}/user",
+            headers=_encabezados(access_token),
+            json={"password": nueva_password},
         )
     return _procesar(respuesta)
 

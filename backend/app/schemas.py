@@ -14,6 +14,25 @@ class VerificacionOTPEntrada(BaseModel):
     token: str = Field(min_length=4, max_length=10)
 
 
+class CorreoEntrada(BaseModel):
+    correo: EmailStr
+
+
+class ReenvioOTPEntrada(BaseModel):
+    correo: EmailStr
+    tipo: str = Field(pattern="^(signup|recovery)$")
+
+
+class RenovacionSesionEntrada(BaseModel):
+    refresh_token: str = Field(min_length=1, max_length=4096)
+
+
+class RecuperacionPasswordEntrada(BaseModel):
+    correo: EmailStr
+    token: str = Field(min_length=4, max_length=10)
+    nueva_password: str = Field(min_length=8, max_length=72)
+
+
 class LoginEntrada(BaseModel):
     correo: EmailStr
     password: str = Field(min_length=1, max_length=72)

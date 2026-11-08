@@ -16,6 +16,7 @@ export class VerificarOtp implements OnInit {
 
   readonly cargando = signal(false);
   readonly error = signal<string | null>(null);
+  readonly aviso = signal<string | null>(null);
 
   constructor(
     private readonly auth: AuthService,
@@ -40,6 +41,16 @@ export class VerificarOtp implements OnInit {
         this.cargando.set(false);
         this.error.set(mensajeDeError(error));
       },
+    });
+  }
+
+  reenviar(): void {
+    this.error.set(null);
+    this.aviso.set(null);
+    this.cargando.set(true);
+    this.auth.reenviarOtp(this.correo).subscribe({
+      next: (respuesta) => { this.cargando.set(false); this.aviso.set(respuesta.mensaje); },
+      error: (error) => { this.cargando.set(false); this.error.set(mensajeDeError(error)); },
     });
   }
 }

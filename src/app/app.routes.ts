@@ -9,12 +9,14 @@ import { Estudiantes } from './pages/estudiantes/estudiantes';
 import { Tarjetas } from './pages/tarjetas/tarjetas';
 import { Historial } from './pages/historial/historial';
 import { Admin } from './pages/admin/admin';
+import { RecuperarPassword } from './pages/recuperar-password/recuperar-password';
 import { adminGuard, authGuard } from './guards/role.guards';
 
 export const routes: Routes = [
   { path: 'login', component: Login },
   { path: 'registro', component: Registro },
   { path: 'verificar-otp', component: VerificarOtp },
+  { path: 'recuperar-password', component: RecuperarPassword },
   { path: 'vinculacion', component: Vinculacion, canActivate: [authGuard] },
   { path: 'dashboard', component: Dashboard, canActivate: [adminGuard] },
   { path: 'estudiantes', component: Estudiantes, canActivate: [adminGuard] },
