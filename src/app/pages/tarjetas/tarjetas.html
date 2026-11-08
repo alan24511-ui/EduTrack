@@ -24,10 +24,10 @@
                         <div class="d-flex flex-column align-items-center justify-content-center text-center flex-grow-1">
                             <img src="img/nfc.png" alt="NFC" width="60" class="mb-3">
                             <h3 class="fs-4 fw-bolder mb-2">Acerca la credencial al lector</h3>
-                            <p class="mb-3">El lector está listo para detectar la tarjeta</p>
-                            <span class="fs-5 fw-semibold text-success">Lector conectado</span>
+                            <p class="mb-3">Captura el UID real que entrega el lector para asociarlo</p>
+                            <span class="fs-5 fw-semibold" [class.text-success]="lector()?.conectado" [class.text-danger]="!lector()?.conectado">{{ lector() ? (lector()!.conectado ? 'Lector conectado' : 'Lector sin contacto reciente') : 'Lector no configurado' }}</span>
                         </div>
-                        <button type="button" class="btn btn-primary btn-lg rounded-3 fw-bold w-100">Esperando credencial</button>
+                        <button type="button" class="btn btn-primary btn-lg rounded-3 fw-bold w-100" (click)="iniciarAsociacion()">Registrar UID</button>
                     </div>
                 </div>
             </div>
@@ -37,25 +37,25 @@
                     <div class="card-body d-flex flex-column gap-3 p-4">
                         <div class="d-flex align-items-center justify-content-center gap-2">
                             <img src="img/v42_13.png" alt="" width="24" height="24">
-                            <span class="fs-5 fw-bold text-success">Credencial detectada</span>
+                            <span class="fs-5 fw-bold text-success">UID de tarjeta</span>
                         </div>
 
                         <div class="d-flex flex-column gap-3 flex-grow-1">
                             <div>
                                 <span class="d-block small text-secondary">UID de la tarjeta</span>
-                                <span id="detalle-uid" class="d-block fs-5 fw-bold font-monospace">&nbsp;</span>
+                                <span id="detalle-uid" class="d-block fs-5 fw-bold font-monospace">{{ uid || '—' }}</span>
                             </div>
                             <div>
                                 <span class="d-block small text-secondary">Alumno asociado</span>
-                                <span id="detalle-alumno" class="d-block fw-bolder">&nbsp;</span>
+                                <span id="detalle-alumno" class="d-block fw-bolder">{{ nombreEstudianteSeleccionado() }}</span>
                             </div>
                             <div>
                                 <span class="d-block small text-secondary">Tipo de tarjeta</span>
-                                <span id="detalle-tipo" class="d-block fw-bolder">&nbsp;</span>
+                                <span id="detalle-tipo" class="d-block fw-bolder">{{ estadoTarjetaSeleccionada() }}</span>
                             </div>
                         </div>
 
-                        <button type="button" class="btn btn-outline-primary btn-lg rounded-3 fw-bold w-100">Copiar UID</button>
+                        <button type="button" class="btn btn-outline-primary btn-lg rounded-3 fw-bold w-100" [disabled]="!uid" (click)="copiarUid()">Copiar UID</button>
                     </div>
                 </div>
             </div>
@@ -63,9 +63,25 @@
 
         <!-- Acciones -->
         <div class="d-flex flex-column flex-md-row justify-content-center gap-3 my-4">
-            <button type="button" class="btn btn-primary btn-lg rounded-3 fw-bold px-5">Asociar alumno</button>
-            <button type="button" class="btn btn-outline-primary btn-lg rounded-3 fw-bold px-5">Cancelar</button>
+            <button type="button" class="btn btn-primary btn-lg rounded-3 fw-bold px-5" (click)="iniciarAsociacion()">Asociar alumno</button>
+            <button type="button" class="btn btn-outline-primary btn-lg rounded-3 fw-bold px-5" (click)="cancelar()">Cancelar</button>
         </div>
+
+        @if (error()) { <div class="alert alert-danger" role="alert">{{ error() }}</div> }
+        @if (aviso()) { <div class="alert alert-success" role="status">{{ aviso() }}</div> }
+        @if (formularioVisible()) {
+            <section class="card rounded-4 shadow-sm mb-4"><div class="card-body p-4">
+                <h3 class="fs-5 fw-bolder">{{ editando() === null ? 'Asociar tarjeta' : 'Cambiar tarjeta o vigencia' }}</h3>
+                <form (ngSubmit)="guardar()" class="row g-3 align-items-end">
+                    <div class="col-12 col-md-4"><label for="uid-rfid" class="form-label">UID hexadecimal leído</label><input id="uid-rfid" name="uid" [(ngModel)]="uid" class="form-control font-monospace text-uppercase" required minlength="8" maxlength="20" pattern="[0-9A-Fa-f]+"></div>
+                    <div class="col-12 col-md-4"><label for="estudiante-rfid" class="form-label">Estudiante</label><select id="estudiante-rfid" name="estudiante" [(ngModel)]="idEstudiante" class="form-select" required><option value="">Selecciona un estudiante</option>@for (s of estudiantes(); track s.id) { <option [value]="s.id">{{ s.nombre }} · {{ s.matricula }}</option> }</select></div>
+                    <div class="col-12 col-md-4"><label for="propietario-rfid" class="form-label">Propietario (opcional)</label><input id="propietario-rfid" name="propietario" [(ngModel)]="propietario" class="form-control" maxlength="120"></div>
+                    <div class="col-12 col-md-4"><label for="vigencia-inicio" class="form-label">Vigencia desde</label><input id="vigencia-inicio" name="vigenciaInicio" type="date" [(ngModel)]="vigenciaInicio" class="form-control"></div>
+                    <div class="col-12 col-md-4"><label for="vigencia-fin" class="form-label">Vigencia hasta</label><input id="vigencia-fin" name="vigenciaTermino" type="date" [(ngModel)]="vigenciaTermino" class="form-control"></div>
+                    <div class="col-12 d-flex gap-2"><button class="btn btn-primary" [disabled]="cargando()">Guardar tarjeta</button><button type="button" class="btn btn-outline-secondary" (click)="cancelar()">Cancelar</button></div>
+                </form>
+            </div></section>
+        }
 
         <!-- Credenciales registradas -->
         <section class="card rounded-4 shadow-sm">
@@ -77,7 +93,7 @@
                     <div class="col-12 col-md-6 col-lg-5 col-xl-4 d-none d-sm-block">
                         <div class="position-relative">
                             <img src="img/v38_81.png" alt="" width="20" height="20" class="position-absolute top-50 start-0 translate-middle-y ms-3 opacity-50 pe-none">
-                            <input type="text" class="form-control border-primary-subtle rounded-3 py-2 ps-5" placeholder="Buscar...." aria-label="Buscar credenciales">
+                            <input type="text" name="buscar" [(ngModel)]="buscar" class="form-control border-primary-subtle rounded-3 py-2 ps-5" placeholder="Buscar...." aria-label="Buscar credenciales">
                         </div>
                     </div>
                 </div>
@@ -88,11 +104,20 @@
                             <tr>
                                 <th class="text-primary fw-bolder">UID</th>
                                 <th class="text-primary fw-bolder">Alumno</th>
-                                <th class="text-primary fw-bolder">Fecha de registro</th>
+                                <th class="text-primary fw-bolder">Vigencia</th>
                                 <th class="text-primary fw-bolder">Estado</th>
                             </tr>
                         </thead>
-                        <tbody id="tabla-credenciales"></tbody>
+                        <tbody id="tabla-credenciales">
+                            @for (tarjeta of visibles; track tarjeta.idTarjeta) {
+                                <tr>
+                                    <td><button type="button" class="btn btn-link text-decoration-none p-0 font-monospace" (click)="editar(tarjeta)">{{ tarjeta.uid }}</button></td>
+                                    <td>{{ tarjeta.nombreEstudiante }}</td>
+                                    <td>{{ tarjeta.vigenciaInicio || '—' }} — {{ tarjeta.vigenciaTermino || '—' }}</td>
+                                    <td><span class="badge" [class.text-bg-success]="tarjeta.vigente" [class.text-bg-secondary]="!tarjeta.vigente">{{ tarjeta.vigente ? 'Vigente' : 'Fuera de vigencia' }}</span></td>
+                                </tr>
+                            } @empty { <tr><td colspan="4" class="text-center py-4">No hay tarjetas registradas.</td></tr> }
+                        </tbody>
                     </table>
                 </div>
             </div>

@@ -67,13 +67,29 @@
                     <div class="col-12 col-lg-8 col-xxl-6">
                         <div class="position-relative">
                             <img src="img/v38_81.png" alt="" width="20" height="20" class="position-absolute top-50 start-0 translate-middle-y ms-3 opacity-50 pe-none">
-                            <input type="text" class="form-control border-primary-subtle rounded-4 py-3 ps-5" placeholder="Buscar por nombre, matrícula o grupo...." aria-label="Buscar alumnos">
+                            <input type="text" name="buscar" [(ngModel)]="buscar" class="form-control border-primary-subtle rounded-4 py-3 ps-5" placeholder="Buscar por nombre, matrícula o grupo...." aria-label="Buscar alumnos">
                         </div>
                     </div>
                     <div class="col-12 col-lg-auto">
-                        <button type="button" class="btn btn-primary btn-lg rounded-4 fw-semibold text-nowrap w-100">+ Nuevo alumno</button>
+                        <button type="button" class="btn btn-primary btn-lg rounded-4 fw-semibold text-nowrap w-100" (click)="nuevo()">+ Nuevo alumno</button>
                     </div>
                 </section>
+
+                @if (error()) { <div class="alert alert-danger" role="alert">{{ error() }}</div> }
+                @if (aviso()) { <div class="alert alert-success" role="status">{{ aviso() }}</div> }
+                @if (formularioVisible()) {
+                    <section class="card rounded-4 shadow-sm mb-4"><div class="card-body p-4">
+                        <h3 class="fs-5 fw-bold text-primary">{{ editando() === null ? 'Registrar alumno' : 'Editar alumno' }}</h3>
+                        <form (ngSubmit)="guardar()" class="row g-3 align-items-end">
+                            <div class="col-12 col-md-6"><label for="nombre-alumno" class="form-label">Nombre completo</label><input id="nombre-alumno" name="nombre" [(ngModel)]="nombre" class="form-control" required minlength="2" maxlength="200"></div>
+                            <div class="col-12 col-md-3"><label for="matricula-alumno" class="form-label">Matrícula</label><input id="matricula-alumno" name="matricula" [(ngModel)]="matricula" class="form-control" required maxlength="80"></div>
+                            <div class="col-12 col-md-3"><label for="grupo-alumno" class="form-label">Grupo</label><input id="grupo-alumno" name="grupo" [(ngModel)]="grupo" class="form-control" required maxlength="80"></div>
+                            <div class="col-12 col-md-6"><label for="correo-alumno" class="form-label">Correo institucional (opcional)</label><input id="correo-alumno" name="correo" type="email" [(ngModel)]="correo" class="form-control"></div>
+                            <div class="col-12 d-flex gap-2"><button class="btn btn-primary" [disabled]="cargando()">{{ editando() === null ? 'Registrar' : 'Guardar cambios' }}</button><button type="button" class="btn btn-outline-secondary" (click)="cancelar()">Cancelar</button></div>
+                        </form>
+                    </div></section>
+                }
+                @if (cargando()) { <div class="small text-secondary mb-2" role="status">Cargando estudiantes…</div> }
 
                 <!-- Tabla de alumnos -->
                 <section class="card rounded-4 overflow-hidden">
@@ -88,7 +104,15 @@
                                     <th class="text-primary fs-5 fw-bold px-4 py-3">Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody id="tabla-estudiantes"></tbody>
+                            <tbody id="tabla-estudiantes">
+                                @for (alumno of visibles; track alumno.id) {
+                                    <tr>
+                                        <td class="px-4">{{ alumno.matricula }}</td><td>{{ alumno.nombre }}</td><td>{{ alumno.grupo }}</td><td>—</td>
+                                        <td><div class="d-flex gap-2"><button type="button" class="btn btn-sm btn-outline-primary" (click)="editar(alumno)">Editar</button><button type="button" class="btn btn-sm btn-outline-secondary" (click)="alternarTutores(alumno.id)">Tutores ({{ alumno.tutores?.length ?? 0 }})</button></div></td>
+                                    </tr>
+                                    @if (tutoresAbiertos() === alumno.id) { <tr><td colspan="5" class="px-4 py-2"><strong>Tutores vinculados:</strong> {{ nombresTutores(alumno) }}</td></tr> }
+                                } @empty { <tr><td colspan="5" class="text-center py-4">No hay estudiantes para mostrar.</td></tr> }
+                            </tbody>
                         </table>
                     </div>
                 </section>

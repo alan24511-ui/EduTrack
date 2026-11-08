@@ -65,6 +65,8 @@
                         <h2 class="fs-4 fw-bold text-primary mb-1">Panel de Control</h2>
                         <p class="fs-6 fw-medium text-primary opacity-75 mb-0">Resumen general de asistencia</p>
                     </div>
+                    @if (error()) { <div class="alert alert-danger" role="alert">{{ error() }}</div> }
+                    @if (cargando()) { <div class="small text-secondary mb-3" role="status">Cargando datos…</div> }
 
                     <!-- Tarjetas estadísticas -->
                     <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3 mb-4">
@@ -74,7 +76,7 @@
                                     <img src="img/v42_4.png" alt="" width="40" height="40">
                                     <div class="d-flex flex-column">
                                         <span class="small fw-medium text-primary mb-1">Alumnos registrados</span>
-                                        <span id="stat-registrados" class="fs-2 fw-bold text-primary">&nbsp;</span>
+                                        <span id="stat-registrados" class="fs-2 fw-bold text-primary">{{ datos()?.totalEstudiantes ?? '—' }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -85,7 +87,7 @@
                                     <img src="img/v42_13.png" alt="" width="40" height="40">
                                     <div class="d-flex flex-column">
                                         <span class="small fw-medium text-primary mb-1">A tiempo</span>
-                                        <span id="stat-a-tiempo" class="fs-2 fw-bold text-success">&nbsp;</span>
+                                        <span id="stat-a-tiempo" class="fs-2 fw-bold text-success">—</span>
                                     </div>
                                 </div>
                             </div>
@@ -96,7 +98,7 @@
                                     <img src="img/v42_26.png" alt="" width="40" height="40">
                                     <div class="d-flex flex-column">
                                         <span class="small fw-medium text-primary mb-1">Retardos</span>
-                                        <span id="stat-retardos" class="fs-2 fw-bold text-warning">&nbsp;</span>
+                                        <span id="stat-retardos" class="fs-2 fw-bold text-warning">—</span>
                                     </div>
                                 </div>
                             </div>
@@ -107,12 +109,33 @@
                                     <img src="img/v42_27.png" alt="" width="40" height="40">
                                     <div class="d-flex flex-column">
                                         <span class="small fw-medium text-primary mb-1">Sin registro</span>
-                                        <span id="stat-sin-registro" class="fs-2 fw-bold text-danger">&nbsp;</span>
+                                        <span id="stat-sin-registro" class="fs-2 fw-bold text-danger">{{ datos()?.inasistencias ?? '—' }}</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+
+                    <div class="d-flex flex-column flex-md-row justify-content-between gap-2 mb-4 small">
+                        <span><strong>Tarjetas vigentes:</strong> {{ datos()?.tarjetasVigentes ?? '—' }}</span>
+                        <span><strong>Asistencias de hoy:</strong> {{ datos()?.asistenciasHoy ?? '—' }}</span>
+                    </div>
+
+                    <section class="card rounded-4 shadow-sm mb-4">
+                        <div class="card-body p-4">
+                            <h3 class="fs-5 fw-bold text-primary mb-3">Estado del lector</h3>
+                            <ul class="list-group list-group-flush">
+                                @for (lector of datos()?.lectores ?? []; track lector.nombre) {
+                                    <li class="list-group-item d-flex justify-content-between gap-3 px-0">
+                                        <span>{{ lector.nombre }} · {{ lector.estado }}</span>
+                                        <span [class.text-success]="lector.conectado" [class.text-danger]="!lector.conectado">
+                                            {{ lector.conectado ? 'Conectado' : 'Sin contacto reciente' }}
+                                        </span>
+                                    </li>
+                                } @empty { <li class="list-group-item px-0">No hay lectores registrados.</li> }
+                            </ul>
+                        </div>
+                    </section>
 
                     <!-- Últimos registros -->
                     <div class="card rounded-4 shadow-sm">
@@ -130,7 +153,18 @@
                                             <th class="text-primary">Estado</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="tabla-registros"></tbody>
+                                    <tbody id="tabla-registros">
+                                        @for (registro of datos()?.ultimosRegistros ?? []; track registro.fecha + registro.matricula) {
+                                            <tr>
+                                                <td>{{ registro.fecha }}</td>
+                                                <td>{{ registro.matricula }}</td>
+                                                <td>{{ registro.nombre }}</td>
+                                                <td>{{ registro.grupo }}</td>
+                                                <td>{{ registro.horaEntrada ? (registro.horaEntrada | date:'shortTime') : '—' }} / {{ registro.horaSalida ? (registro.horaSalida | date:'shortTime') : '—' }}</td>
+                                                <td>{{ registro.estado }}</td>
+                                            </tr>
+                                        } @empty { <tr><td colspan="6" class="text-center py-3">No hay asistencias registradas.</td></tr> }
+                                    </tbody>
                                 </table>
                             </div>
                         </div>

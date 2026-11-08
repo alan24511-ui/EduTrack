@@ -26,12 +26,27 @@ export const adminGuard: CanActivateFn = () => {
 
   return auth.cargarPerfil().pipe(
     map((perfil) =>
-      perfil.rol === 'administrador' ? true : router.createUrlTree(['/vinculacion']),
+      perfil.rol === 'administrador' || perfil.rol === 'superadministrador'
+        ? true
+        : router.createUrlTree(['/vinculacion']),
     ),
     catchError((error: unknown) => {
       if (error instanceof HttpErrorResponse && error.status === 401) {
         auth.limpiarSesion();
       }
+      return of(router.createUrlTree(['/login']));
+    }),
+  );
+};
+
+export const tutorGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+
+  return auth.cargarPerfil().pipe(
+    map((perfil) => perfil.rol === 'tutor' ? true : router.createUrlTree(['/admin'])),
+    catchError((error: unknown) => {
+      if (error instanceof HttpErrorResponse && error.status === 401) auth.limpiarSesion();
       return of(router.createUrlTree(['/login']));
     }),
   );

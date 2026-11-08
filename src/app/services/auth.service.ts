@@ -11,7 +11,7 @@ export interface Tutor {
   correo: string;
 }
 
-export type RolUsuario = 'administrador' | 'tutor';
+export type RolUsuario = 'administrador' | 'superadministrador' | 'tutor';
 
 export interface PerfilUsuario {
   tutor: Tutor | null;
@@ -137,6 +137,16 @@ export class AuthService {
     return this.http
       .post<{ mensaje: string }>(`${this.apiUrl}/logout`, {})
       .pipe(tap(() => this.limpiarSesion()));
+  }
+
+  actualizarTutor(datos: { nombre: string; telefono: string | null }): Observable<Tutor> {
+    return this.http.patch<Tutor>(`${environment.apiUrl}/auth/me`, datos).pipe(
+      tap((tutor) => this.guardarTutor(tutor)),
+    );
+  }
+
+  cambiarPassword(nueva_password: string) {
+    return this.http.post<{ mensaje: string }>(`${environment.apiUrl}/auth/me/password`, { nueva_password });
   }
 
   limpiarSesion(): void {

@@ -4,7 +4,7 @@ Sistema escolar de gestión de estudiantes y asistencia. El frontend es Angular 
 
 ## Estado
 
-La autenticación de tutores y el flujo de vinculación existen. En este repositorio no están las migraciones ni el esquema SQL de Supabase y el backend no tiene implementados los endpoints de estudiantes, tarjetas, asistencias, historial o dashboard. Las páginas de esos módulos son principalmente presentacionales. Consulta [IMPLEMENTACION_PENDIENTE.md](IMPLEMENTACION_PENDIENTE.md) antes de una prueba real.
+El backend contiene operaciones de estudiantes, tarjetas, asistencias, historial y dashboard basadas en el esquema compartido. Falta validar las queries contra la instancia real y las expresiones de checks/RLS. La tabla RFID no tiene columna de activación. Consulta [IMPLEMENTACION_PENDIENTE.md](IMPLEMENTACION_PENDIENTE.md) antes de una prueba real.
 
 ## Requisitos
 
@@ -34,13 +34,13 @@ cp .env.example .env
 uvicorn app.main:app --reload
 ```
 
-La API queda en `http://localhost:8000`; Swagger en `/docs`. Variables necesarias: `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_NAME`, `DATABASE_USER`, `DATABASE_PASSWORD`, `SUPABASE_URL`, `SUPABASE_ANON_KEY` y `CORS_ORIGINS`. No configures `SUPABASE_SERVICE_ROLE_KEY` para las funciones actuales: el cliente Auth usa la clave pública anon; no se incluye ninguna clave en Angular. El backend accede a PostgreSQL con su conexión configurada.
+La API queda en `http://localhost:8000`; Swagger en `/docs`. Variables necesarias: `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_NAME`, `DATABASE_USER`, `DATABASE_PASSWORD`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `CORS_ORIGINS` y un `RFID_INGEST_TOKEN` aleatorio compartido con el servicio local. Auth usa la clave pública anon y no se incluye ninguna clave privada en Angular.
 
 Auth ofrece registro/verificación OTP, login, perfil, logout, refresh token, reenvío OTP y recuperación/restablecimiento de contraseña. Los cambios de contraseña se completan con OTP tipo `recovery`.
 
 ## Servicio del lector
 
-El firmware y el cliente serial están en `firmware/arduino_rc522` y `reader_service`. Instala y configura siguiendo [HARDWARE.md](HARDWARE.md). El servicio intenta enviar a `POST /rfid/lecturas`, endpoint que todavía requiere implementación contra el esquema real; por eso no se debe conectar a una operación de asistencia productiva aún.
+El firmware y el cliente serial están en `firmware/arduino_rc522` y `reader_service`. Instala y configura siguiendo [HARDWARE.md](HARDWARE.md). El servicio envía a `POST /rfid/lecturas`, protegido por token. La API registra entrada y salida diaria; falta prueba física e integración con la base real antes de uso productivo.
 
 ## Pruebas
 

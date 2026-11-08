@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     # --- Supabase ---
     supabase_url: str = ""
     supabase_anon_key: str = ""
-    supabase_service_role_key: str = ""
+    rfid_ingest_token: str = ""
 
     # --- Vinculación ---
     # Minutos que un código de vinculación permanece válido desde su creación.

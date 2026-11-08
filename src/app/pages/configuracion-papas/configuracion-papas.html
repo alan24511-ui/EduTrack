@@ -1,0 +1,37 @@
+<div class="app-container">
+  <aside class="sidebar">
+    <div class="sidebar-header"><img src="/modules/configuracion-papas/images/v129_269.png" alt="Logotipo AsisTec" class="logo-img"><h1 class="brand-name">AsisTec</h1></div>
+    <nav class="sidebar-nav">
+      <a routerLink="/dashboard-papas" class="nav-item"><img src="/modules/configuracion-papas/images/v129_285.png" alt="" class="nav-icon"><span>Inicio</span></a>
+      <a routerLink="/horarios" class="nav-item"><img src="/modules/configuracion-papas/images/v129_279.png" alt="" class="nav-icon"><span>Horarios</span></a>
+      <a routerLink="/configuracion-papas" class="nav-item active"><img src="/modules/configuracion-papas/images/v129_284.png" alt="" class="nav-icon"><span>Configuración</span></a>
+    </nav>
+    <div class="sidebar-footer"><div class="user-info-mini"><img src="/modules/configuracion-papas/images/v129_287.png" alt="" class="user-avatar-mini"><div class="user-details"><span class="user-name-mini">{{ auth.tutor()?.nombre }}</span><span class="user-email-mini">{{ auth.tutor()?.correo }}</span></div></div></div>
+  </aside>
+  <main class="main-content">
+    <header class="top-header"><h2 class="page-title">Configuración</h2><div class="user-avatar-badge">{{ auth.tutor()?.nombre?.slice(0, 1) }}</div></header>
+    @if (error()) { <div class="alert alert-danger" role="alert">{{ error() }}</div> }
+    @if (mensaje()) { <div class="alert alert-success" role="status">{{ mensaje() }}</div> }
+    <div class="content-grid">
+      <section class="card profile-card">
+        <div class="profile-header"><img src="/modules/configuracion-papas/images/v129_287.png" alt="" class="profile-img"><div class="profile-title"><h3>{{ auth.tutor()?.nombre }}</h3><span class="role">Tutor</span></div></div>
+        <form class="info-list" (ngSubmit)="guardarPerfil()">
+          <label class="info-item"><img src="/modules/configuracion-papas/images/v126_39.png" alt="" class="info-icon"><span class="info-text"><span class="info-label">Nombre</span><input class="form-control" name="nombre" [(ngModel)]="nombre" required minlength="2" maxlength="120"></span></label>
+          <label class="info-item"><img src="/modules/configuracion-papas/images/v126_36.png" alt="" class="info-icon"><span class="info-text"><span class="info-label">Teléfono</span><input class="form-control" name="telefono" [(ngModel)]="telefono" maxlength="30" type="tel"></span></label>
+          <div class="info-item"><img src="/modules/configuracion-papas/images/v126_35.png" alt="" class="info-icon"><span class="info-text"><span class="info-label">Correo de la cuenta</span><span class="info-value">{{ auth.tutor()?.correo || '—' }}</span></span></div>
+          <button class="btn btn-primary" type="submit" [disabled]="guardando()">Guardar perfil</button>
+        </form>
+      </section>
+      <div class="right-column">
+        <section class="card notifications-card"><div class="card-header"><img src="/modules/configuracion-papas/images/v111_201.png" alt="" class="card-icon"><h4>Notificaciones</h4></div>
+          <div class="notification-setting"><div class="toggle-container"><input type="checkbox" id="notif-toggle" [checked]="!notificacionesHabilitadas" (change)="cambiarNotificaciones($event)"><label for="notif-toggle" class="toggle-switch"></label><span class="setting-label">Desactivar notificaciones</span></div>
+            <p class="setting-desc">Te avisaremos cuando haya entradas, salidas, retardos o faltas.</p></div>
+        </section>
+        <section class="card security-card"><div class="card-header"><h4>Seguridad</h4></div>
+          <form (ngSubmit)="guardarPassword()" class="security-actions"><label for="new-password">Cambiar contraseña</label><input id="new-password" class="form-control" name="nuevaPassword" [(ngModel)]="nuevaPassword" type="password" minlength="8" maxlength="72" required autocomplete="new-password"><button class="btn btn-outline-primary" type="submit">Actualizar contraseña</button></form>
+          <button class="action-row" type="button" (click)="cerrarSesion()"><span class="action-title">Cerrar sesión</span><span class="action-desc">Salir de tu cuenta en este dispositivo</span></button>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>

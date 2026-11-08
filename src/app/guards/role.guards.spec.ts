@@ -5,7 +5,7 @@ import { firstValueFrom, Observable, of, throwError } from 'rxjs';
 
 import { routes } from '../app.routes';
 import { AuthService, PerfilUsuario } from '../services/auth.service';
-import { adminGuard, authGuard } from './role.guards';
+import { adminGuard, authGuard, tutorGuard } from './role.guards';
 
 describe('role guards', () => {
   let perfil: PerfilUsuario;
@@ -24,7 +24,7 @@ describe('role guards', () => {
     router = TestBed.inject(Router);
   });
 
-  function ejecutar(guard: typeof adminGuard | typeof authGuard) {
+  function ejecutar(guard: typeof adminGuard | typeof authGuard | typeof tutorGuard) {
     return TestBed.runInInjectionContext(() =>
       firstValueFrom(
         guard({} as ActivatedRouteSnapshot, {} as RouterStateSnapshot) as Observable<boolean | UrlTree>,
@@ -43,6 +43,14 @@ describe('role guards', () => {
     expect(await ejecutar(adminGuard)).toBe(true);
   });
 
+  it('allows only a tutor into parent modules', async () => {
+    expect(await ejecutar(tutorGuard)).toBe(true);
+    perfil = { tutor: null, rol: 'administrador' };
+    const resultado = await ejecutar(tutorGuard);
+    expect(resultado instanceof UrlTree).toBe(true);
+    expect(router.serializeUrl(resultado as UrlTree)).toBe('/admin');
+  });
+
   it('allows a signed-in tutor into linking after checking the backend profile', async () => {
     expect(await ejecutar(authGuard)).toBe(true);
     expect(auth.cargarPerfil).toHaveBeenCalledOnce();
@@ -58,9 +66,15 @@ describe('role guards', () => {
     expect(auth.limpiarSesion).toHaveBeenCalledOnce();
   });
 
-  it('protects every administrative route with the admin guard', () => {
-    for (const path of ['admin', 'dashboard', 'estudiantes', 'tarjetas', 'historial']) {
+  it('protects administrative routes with admin guard and scoped views with auth guard', () => {
+    for (const path of ['admin', 'estudiantes', 'tarjetas', 'configuracion']) {
       expect(routes.find((route) => route.path === path)?.canActivate).toContain(adminGuard);
+    }
+    for (const path of ['dashboard', 'historial', 'horarios']) {
+      expect(routes.find((route) => route.path === path)?.canActivate).toContain(authGuard);
+    }
+    for (const path of ['dashboard-papas', 'configuracion-papas']) {
+      expect(routes.find((route) => route.path === path)?.canActivate).toContain(tutorGuard);
     }
   });
 });

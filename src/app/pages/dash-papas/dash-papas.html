@@ -1,0 +1,64 @@
+<div class="main-container">
+  <aside class="sidebar">
+    <div class="sidebar-content">
+      <div class="logo-section"><div class="v111_151 logo-icon"></div><span class="logo-text">AsisTec</span></div>
+      <nav class="nav-menu">
+        <a class="nav-item active" routerLink="/dashboard-papas"><div class="nav-icon home-icon"></div><span>Inicio</span></a>
+        <a class="nav-item" routerLink="/horarios"><div class="nav-icon history-icon"></div><span>Horarios</span></a>
+        <a class="nav-item" routerLink="/configuracion-papas"><div class="nav-icon config-icon"></div><span>Configuración</span></a>
+      </nav>
+      <div class="user-profile-sidebar">
+        <div class="user-avatar-small"></div><div class="user-info-sidebar">
+          <span>{{ auth.tutor()?.nombre }}</span><span>{{ auth.tutor()?.correo }}</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+  <main class="content-area">
+    <header class="top-header"><div></div><div class="header-actions">
+      <div class="user-avatar-header"><div class="avatar-bg"></div><span>{{ iniciales(auth.tutor()?.nombre) }}</span></div>
+    </div></header>
+    <div class="dashboard-content">
+      <section class="welcome-section">
+        <h1>¡Hola, {{ auth.tutor()?.nombre }}!</h1>
+        <p>Aquí puedes consultar la asistencia de tus estudiantes vinculados.</p>
+      </section>
+      @if (cargando()) { <p role="status">Cargando información de asistencia…</p> }
+      @if (error()) { <div class="alert alert-danger" role="alert">{{ error() }}</div> }
+      @if (datos(); as d) {
+        <div class="main-grid">
+          <div class="left-column">
+            <div class="stats-container">
+              <article class="stat-card on-time"><span class="stat-label">Estudiantes vinculados</span><strong>{{ d.estudiantes.length }}</strong></article>
+              <article class="stat-card late"><span class="stat-label">Registros recientes</span><strong>{{ d.asistencias.length }}</strong></article>
+              <article class="stat-card no-record"><span class="stat-label">Última fecha registrada</span><strong>{{ d.asistencias[0]?.fecha ? (d.asistencias[0].fecha | date:'d MMM y') : '—' }}</strong></article>
+            </div>
+            <section class="table-container">
+              <div class="table-header-title"><span>Últimos registros de asistencia</span></div>
+              @if (d.asistencias.length) {
+                <div class="table-wrapper"><table class="attendance-table">
+                  <thead><tr><th>Estudiante</th><th>Grupo</th><th>Fecha</th><th>Entrada</th><th>Salida</th><th>Estado</th></tr></thead>
+                  <tbody>@for (r of d.asistencias; track r.fecha + r.matricula + r.horaEntrada) {
+                    <tr><td>{{ r.nombre }}</td><td>{{ r.grupo }}</td><td>{{ r.fecha | date:'d/M/y' }}</td>
+                      <td>{{ r.horaEntrada | date:'shortTime' }}</td><td>{{ r.horaSalida ? (r.horaSalida | date:'shortTime') : '—' }}</td><td>{{ r.estado }}</td></tr>
+                  }</tbody>
+                </table></div>
+              } @else { <p class="empty-state">Todavía no hay registros de asistencia para tus estudiantes.</p> }
+            </section>
+          </div>
+          <aside class="right-column">
+            <section class="profile-card"><div class="profile-avatar tutor-avatar">{{ iniciales(auth.tutor()?.nombre) }}</div><div class="profile-info">
+              <span>{{ auth.tutor()?.nombre }}</span><span>Tutor</span>
+            </div><ul class="profile-details">
+              <li>Correo: {{ auth.tutor()?.correo }}</li><li>Estudiantes vinculados: {{ d.estudiantes.length }}</li>
+            </ul></section>
+            <section class="summary-card"><h3>Estudiantes</h3>
+              @for (e of d.estudiantes; track e.id) { <div class="student-summary"><strong>{{ e.nombre }}</strong><span>Grupo {{ e.grupo }} · {{ e.matricula }}</span></div> }
+              @empty { <p>No hay estudiantes vinculados con autorización activa.</p> }
+            </section>
+          </aside>
+        </div>
+      }
+    </div>
+  </main>
+</div>

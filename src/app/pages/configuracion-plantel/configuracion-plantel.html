@@ -1,0 +1,26 @@
+<div class="app-container">
+  <aside class="sidebar"><div class="sidebar-header"><div class="logo-icon v129_244"></div><span class="brand-name">AsisTec</span></div>
+    <nav class="sidebar-nav">
+      <a routerLink="/admin" class="nav-item"><div class="nav-icon v129_260"></div><span>Inicio</span></a>
+      <a routerLink="/estudiantes" class="nav-item"><div class="nav-icon v129_261"></div><span>Estudiantes</span></a>
+      <a routerLink="/horarios" class="nav-item"><div class="nav-icon v129_254"></div><span>Horarios</span></a>
+      <a routerLink="/configuracion" class="nav-item active"><div class="nav-icon v129_259"></div><span>Configuración</span></a>
+    </nav>
+    <div class="sidebar-footer"><div class="user-info"><span class="user-name">{{ auth.tutor()?.nombre || 'Administrador' }}</span><span class="user-email">{{ auth.tutor()?.correo }}</span></div></div>
+  </aside>
+  <main class="main-content">
+    <header class="main-header"><div class="header-left"><h1 class="page-title">Configuración</h1></div><div class="header-actions"><div class="user-profile-badge"><div class="profile-circle">AD</div></div></div></header>
+    @if (error()) { <div class="alert alert-danger" role="alert">{{ error() }}</div> }
+    @if (mensaje()) { <div class="alert alert-success" role="status">{{ mensaje() }}</div> }
+    <div class="content-grid"><section class="card info-card">
+      <div class="card-header"><div class="card-icon v111_240"></div><h2>Información del plantel</h2></div>
+      <form class="info-form" (ngSubmit)="guardar()">
+        <div class="form-group full-width"><label for="plantel-nombre">Nombre del plantel</label><input id="plantel-nombre" class="form-control" name="nombre" [ngModel]="datos().nombre" (ngModelChange)="actualizar('nombre',$event)" required minlength="2" maxlength="200"></div>
+        <div class="form-group full-width"><label for="plantel-direccion">Dirección</label><input id="plantel-direccion" class="form-control" name="direccion" [ngModel]="datos().direccion" (ngModelChange)="actualizar('direccion',$event)" required minlength="2" maxlength="250"></div>
+        <div class="form-row"><div class="form-group"><label for="plantel-telefono">Teléfono</label><input id="plantel-telefono" class="form-control" name="telefono" [ngModel]="datos().telefono" (ngModelChange)="actualizar('telefono',$event)" required minlength="5" maxlength="30" type="tel"></div>
+          <div class="form-group"><label for="plantel-correo">Correo institucional</label><input id="plantel-correo" class="form-control" name="correo" [ngModel]="datos().correo" (ngModelChange)="actualizar('correo',$event)" required email maxlength="254" type="email"></div></div>
+        <button class="btn btn-primary" type="submit" [disabled]="guardando()">{{ guardando() ? 'Guardando…' : 'Guardar información' }}</button>
+      </form>
+    </section></div>
+  </main>
+</div>

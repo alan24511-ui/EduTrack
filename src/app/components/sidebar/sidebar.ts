@@ -19,19 +19,27 @@ interface ItemMenu {
   },
 })
 export class Sidebar {
-  private readonly auth = inject(AuthService);
+  readonly auth = inject(AuthService);
 
-  // Reportes y Configuración todavía no tienen ruta.
   private readonly itemsAdministrador: ItemMenu[] = [
     { texto: 'Inicio', icono: 'img/v38_50.png', ruta: '/admin' },
     { texto: 'Estudiantes', icono: 'img/v38_51.png', ruta: '/estudiantes' },
     { texto: 'Tarjetas', icono: 'img/v38_52.png', ruta: '/tarjetas' },
     { texto: 'Historial', icono: 'img/v38_53.png', ruta: '/historial' },
     { texto: 'Reportes', icono: 'img/v38_54.png' },
-    { texto: 'Configuración', icono: 'img/v38_55.png' },
+    { texto: 'Horarios', icono: 'img/v38_56.png', ruta: '/horarios' },
+    { texto: 'Configuración', icono: 'img/v38_55.png', ruta: '/configuracion' },
   ];
 
   get items(): ItemMenu[] {
-    return this.auth.rol() === 'administrador' ? this.itemsAdministrador : [];
+    if (this.auth.rol() === 'administrador' || this.auth.rol() === 'superadministrador') return this.itemsAdministrador;
+    if (this.auth.rol() === 'tutor') return [
+      { texto: 'Inicio', icono: 'img/v38_50.png', ruta: '/dashboard-papas' },
+      { texto: 'Vincular estudiante', icono: 'img/v38_51.png', ruta: '/vinculacion' },
+      { texto: 'Historial', icono: 'img/v38_53.png', ruta: '/historial' },
+      { texto: 'Horarios', icono: 'img/v38_56.png', ruta: '/horarios' },
+      { texto: 'Configuración', icono: 'img/v38_55.png', ruta: '/configuracion-papas' },
+    ];
+    return [];
   }
 }

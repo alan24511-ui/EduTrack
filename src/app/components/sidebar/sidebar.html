@@ -24,7 +24,7 @@
 <div class="d-none d-md-flex align-items-center gap-3 px-4 pt-3 border-top border-white border-opacity-10">
     <img src="img/v38_56.png" alt="" width="40" height="40" class="rounded-circle bg-white bg-opacity-25">
     <div class="d-flex flex-column text-break">
-        <span class="fw-semibold">Usuario</span>
-        <span class="small opacity-50">usuario@cbtis75.edu.mx</span>
+        <span class="fw-semibold">{{ auth.tutor()?.nombre || auth.rol() }}</span>
+        <span class="small opacity-50">{{ auth.tutor()?.correo }}</span>
     </div>
 </div>

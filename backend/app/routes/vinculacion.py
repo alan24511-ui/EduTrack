@@ -137,6 +137,15 @@ def confirmar_vinculacion(
             if expirado:
                 raise HTTPException(status_code=410, detail="El código ya expiró.")
 
+            # Lock the student row so two different valid codes cannot link two
+            # tutors concurrently even if the database lacks a UNIQUE constraint.
+            cursor.execute(
+                'SELECT "Id_Estudiante" FROM "Estudiantes" WHERE "Id_Estudiante"=%s FOR UPDATE',
+                (id_estudiante,),
+            )
+            if cursor.fetchone() is None:
+                raise HTTPException(status_code=404, detail="El estudiante ya no existe.")
+
             cursor.execute(
                 'SELECT 1 FROM "Estudiante_Tutor" WHERE "Id_Estudiante" = %s',
                 (id_estudiante,),

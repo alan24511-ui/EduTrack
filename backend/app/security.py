@@ -56,8 +56,28 @@ def es_administrador(auth_user_id: str) -> bool:
         ) from error
 
 
+def obtener_rol(auth_user_id: str) -> str:
+    """Resuelve el rol persistido; nunca confía en claims enviados por el cliente."""
+    try:
+        with obtener_conexion() as conexion:
+            with conexion.cursor() as cursor:
+                cursor.execute('SELECT "Rol" FROM "Administradores" WHERE auth_user_id = %s', (auth_user_id,))
+                fila = cursor.fetchone()
+                if fila:
+                    rol = str(fila[0]).strip().lower()
+                    if rol in {"administrador", "superadministrador"}:
+                        return rol
+                    raise HTTPException(status_code=403, detail="El rol de administrador no está permitido.")
+                cursor.execute('SELECT 1 FROM "Tutores" WHERE auth_user_id = %s', (auth_user_id,))
+                if cursor.fetchone():
+                    return "tutor"
+                raise HTTPException(status_code=403, detail="La cuenta no tiene un rol autorizado.")
+    except PsycopgError as error:
+        raise HTTPException(status_code=500, detail="No fue posible comprobar los permisos de la cuenta.") from error
+
+
 def usuario_administrador(usuario: dict = Depends(usuario_verificado)) -> dict:
     """Exige una sesión válida y verificada cuyo usuario figure como admin."""
-    if not es_administrador(usuario["id"]):
+    if obtener_rol(usuario["id"]) not in {"administrador", "superadministrador"}:
         raise HTTPException(status_code=403, detail="Esta acción requiere permisos de administrador.")
     return usuario

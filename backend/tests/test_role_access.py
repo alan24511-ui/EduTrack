@@ -54,7 +54,7 @@ class RoleAccessTests(unittest.TestCase):
         )
 
     def test_tutor_cannot_generate_code_even_with_client_admin_claim(self):
-        with patch("app.security.es_administrador", return_value=False):
+        with patch("app.security.obtener_rol", return_value="tutor"):
             with self.assertRaises(HTTPException) as error:
                 usuario_administrador(self.usuario_tutor)
         self.assertEqual(error.exception.status_code, 403)
@@ -68,7 +68,7 @@ class RoleAccessTests(unittest.TestCase):
         )
 
     def test_admin_can_generate_code(self):
-        with patch("app.security.es_administrador", return_value=True):
+        with patch("app.security.obtener_rol", return_value="administrador"):
             usuario = usuario_administrador(self.usuario_admin)
         cursor = MagicMock()
         cursor.__enter__.return_value = cursor
@@ -96,6 +96,11 @@ class RoleAccessTests(unittest.TestCase):
 
         self.assertEqual(response["codigo"], "ABCDEFGHJKLM")
         self.assertEqual(response["id_codigo"], 9)
+
+    def test_superadmin_has_admin_access(self):
+        with patch("app.security.obtener_rol", return_value="superadministrador"):
+            usuario = usuario_administrador(self.usuario_admin)
+        self.assertEqual(usuario, self.usuario_admin)
 
 
 if __name__ == "__main__":

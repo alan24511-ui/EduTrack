@@ -12,10 +12,10 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from psycopg import Error as PsycopgError
 
 from app.database import obtener_conexion
-from app.schemas import (CorreoEntrada, LoginEntrada, RecuperacionPasswordEntrada,
+from app.schemas import (CambiarPasswordEntrada, CorreoEntrada, LoginEntrada, RecuperacionPasswordEntrada,
                          RegistroTutorEntrada, RenovacionSesionEntrada,
-                         ReenvioOTPEntrada, VerificacionOTPEntrada)
-from app.security import es_administrador, usuario_actual, usuario_verificado
+                         ReenvioOTPEntrada, TutorActualizar, VerificacionOTPEntrada)
+from app.security import obtener_rol, usuario_actual, usuario_verificado
 from app import supabase_auth
 
 router = APIRouter(prefix="/auth", tags=["Autenticación"])
@@ -44,20 +44,18 @@ def _crear_tutor_si_no_existe(auth_user_id: str, nombre: str, correo: str) -> di
     """Inserta el tutor asociado al usuario de Supabase (idempotente)."""
     with obtener_conexion() as conexion:
         with conexion.cursor() as cursor:
+            # The supplied schema has no UNIQUE constraint on Tutores.auth_user_id.
+            # Serialize this operation without assuming or altering that schema.
+            cursor.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))", (auth_user_id,))
             cursor.execute(
-                'INSERT INTO "Tutores" ("Nombre", "Correo", auth_user_id) '
-                "VALUES (%s, %s, %s) "
-                "ON CONFLICT (auth_user_id) DO NOTHING "
-                'RETURNING "Id_Tutor", "Nombre", "Telefono", "Correo"',
-                (nombre, correo, auth_user_id),
+                'SELECT "Id_Tutor", "Nombre", "Telefono", "Correo" FROM "Tutores" WHERE auth_user_id=%s ORDER BY "Id_Tutor" LIMIT 1',
+                (auth_user_id,),
             )
             fila = cursor.fetchone()
             if fila is None:
-                # Ya existía: recuperamos el registro actual.
                 cursor.execute(
-                    'SELECT "Id_Tutor", "Nombre", "Telefono", "Correo" '
-                    'FROM "Tutores" WHERE auth_user_id = %s',
-                    (auth_user_id,),
+                    'INSERT INTO "Tutores" ("Nombre", "Correo", auth_user_id) VALUES (%s,%s,%s) RETURNING "Id_Tutor", "Nombre", "Telefono", "Correo"',
+                    (nombre, correo, auth_user_id),
                 )
                 fila = cursor.fetchone()
         conexion.commit()
@@ -170,9 +168,13 @@ def iniciar_sesion(datos: LoginEntrada):
     nombre = (usuario.get("user_metadata") or {}).get("nombre") or datos.correo
 
     try:
-        tutor = _crear_tutor_si_no_existe(auth_user_id, nombre, datos.correo)
-        requiere_vinculacion = not _tiene_estudiante_vinculado(tutor["idTutor"])
-        rol = "administrador" if es_administrador(auth_user_id) else "tutor"
+        rol = obtener_rol(auth_user_id)
+        if rol == "tutor":
+            tutor = _crear_tutor_si_no_existe(auth_user_id, nombre, datos.correo)
+            requiere_vinculacion = not _tiene_estudiante_vinculado(tutor["idTutor"])
+        else:
+            tutor = None
+            requiere_vinculacion = False
     except PsycopgError:
         raise HTTPException(
             status_code=500,
@@ -190,19 +192,45 @@ def iniciar_sesion(datos: LoginEntrada):
 @router.get("/me", summary="Perfil del tutor autenticado")
 def perfil(usuario: dict = Depends(usuario_verificado)):
     try:
-        tutor = _buscar_tutor_por_auth_id(usuario["id"])
+        rol = obtener_rol(usuario["id"])
+        tutor = _buscar_tutor_por_auth_id(usuario["id"]) if rol == "tutor" else None
     except PsycopgError:
         raise HTTPException(
             status_code=500,
             detail="No fue posible consultar los datos del tutor.",
         )
-    rol = "administrador" if es_administrador(usuario["id"]) else "tutor"
-    if tutor is None and rol != "administrador":
-        raise HTTPException(
-            status_code=403,
-            detail="La cuenta no tiene un rol autorizado.",
-        )
     return {"tutor": tutor, "rol": rol}
+
+
+@router.patch("/me", summary="Actualizar el perfil del tutor autenticado")
+def actualizar_perfil(datos: TutorActualizar, usuario: dict = Depends(usuario_verificado)):
+    if obtener_rol(usuario["id"]) != "tutor":
+        raise HTTPException(status_code=403, detail="Esta operación es exclusiva para tutores.")
+    if not datos.nombre.strip():
+        raise HTTPException(status_code=422, detail="El nombre es obligatorio.")
+    try:
+        with obtener_conexion() as conexion, conexion.cursor() as cursor:
+            cursor.execute(
+                'UPDATE "Tutores" SET "Nombre"=%s, "Telefono"=%s WHERE auth_user_id=%s '
+                'RETURNING "Id_Tutor", "Nombre", "Telefono", "Correo"',
+                (datos.nombre.strip(), datos.telefono.strip() if datos.telefono else None, usuario["id"]),
+            )
+            fila = cursor.fetchone()
+            if fila is None:
+                raise HTTPException(status_code=404, detail="No se encontró el perfil del tutor.")
+        return {"idTutor": fila[0], "nombre": fila[1], "telefono": fila[2], "correo": fila[3]}
+    except PsycopgError as error:
+        raise HTTPException(status_code=503, detail="No fue posible actualizar el perfil.") from error
+
+
+@router.post("/me/password", summary="Cambiar la contraseña de la cuenta")
+def cambiar_password(datos: CambiarPasswordEntrada, usuario: dict = Depends(usuario_verificado),
+                     authorization: str = Header(default="")):
+    # No se aceptan correos/identidades enviados por el cliente para elegir la cuenta.
+    if not authorization.lower().startswith("bearer "):
+        raise HTTPException(status_code=401, detail="Falta el token de acceso.")
+    supabase_auth.actualizar_password(authorization.split(" ", 1)[1].strip(), datos.nueva_password)
+    return {"mensaje": "Contraseña actualizada correctamente."}
 
 
 @router.post("/logout", summary="Cerrar sesión")
