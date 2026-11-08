@@ -9,7 +9,6 @@ import { AuthService } from '../../services/auth.service';
 @Component({
   imports: [Layout, RouterLink, DatePipe],
   selector: 'app-dashboard',
-  styleUrl: './dashboard.css',
   templateUrl: './dashboard.html',
 })
 export class Dashboard implements OnInit {

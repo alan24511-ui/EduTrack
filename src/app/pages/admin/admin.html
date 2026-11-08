@@ -2,48 +2,7 @@
     <div class="container-fluid p-0">
         <div class="row g-0 min-vh-100">
 
-            <!-- Sidebar -->
-            <aside class="col-12 col-md-4 col-lg-3 col-xxl-2 bg-primary text-white d-flex flex-column py-3 py-md-4">
-                <div class="d-flex align-items-center gap-3 px-4 mb-2 mb-md-4">
-                    <img src="img/logo_blanco.png" alt="Logotipo AsisTec" width="80" class="img-fluid">
-                    <h1 class="fs-3 fw-normal mb-0">AsisTec</h1>
-                </div>
-
-                <nav class="nav flex-row flex-nowrap flex-md-column overflow-x-auto flex-grow-1 align-content-start">
-                    <a routerLink="/admin" class="nav-link text-white text-nowrap fw-semibold d-flex align-items-center gap-3 px-4 py-2 bg-white bg-opacity-25" aria-current="page">
-                        <img src="img/v38_50.png" alt="" width="24" height="24">
-                        <span>Inicio</span>
-                    </a>
-                    <a routerLink="/estudiantes" class="nav-link text-white text-nowrap fw-semibold d-flex align-items-center gap-3 px-4 py-2">
-                        <img src="img/v38_51.png" alt="" width="24" height="24">
-                        <span>Estudiantes</span>
-                    </a>
-                    <a routerLink="/tarjetas" class="nav-link text-white text-nowrap fw-semibold d-flex align-items-center gap-3 px-4 py-2">
-                        <img src="img/v38_52.png" alt="" width="24" height="24">
-                        <span>Tarjetas</span>
-                    </a>
-                    <a routerLink="/historial" class="nav-link text-white text-nowrap fw-semibold d-flex align-items-center gap-3 px-4 py-2">
-                        <img src="img/v38_53.png" alt="" width="24" height="24">
-                        <span>Historial</span>
-                    </a>
-                    <a role="button" tabindex="0" class="nav-link text-white text-nowrap fw-semibold d-flex align-items-center gap-3 px-4 py-2">
-                        <img src="img/v38_54.png" alt="" width="24" height="24">
-                        <span>Reportes</span>
-                    </a>
-                    <a role="button" tabindex="0" class="nav-link text-white text-nowrap fw-semibold d-flex align-items-center gap-3 px-4 py-2">
-                        <img src="img/v38_55.png" alt="" width="24" height="24">
-                        <span>Configuración</span>
-                    </a>
-                </nav>
-
-                <div class="d-none d-md-flex align-items-center gap-3 px-4 pt-3 border-top border-white border-opacity-10">
-                    <img src="img/v38_56.png" alt="" width="40" height="40" class="rounded-circle bg-white bg-opacity-25">
-                    <div class="d-flex flex-column text-break">
-                        <span class="fw-semibold">Usuario</span>
-                        <span class="small opacity-50">usuario@cbtis75.edu.mx</span>
-                    </div>
-                </div>
-            </aside>
+            <app-sidebar />
 
             <!-- Contenido principal -->
             <main class="col-12 col-md-8 col-lg-9 col-xxl-10">
@@ -52,7 +11,7 @@
                 <header class="sticky-top bg-white shadow-sm d-flex align-items-center justify-content-between gap-3 px-4 py-3">
                     <div class="d-flex align-items-center gap-3 w-50">
                         <img src="img/v38_81.png" alt="" width="20" height="20" class="opacity-50">
-                        <input type="text" class="form-control border-0 shadow-none p-0" placeholder="Buscar..." aria-label="Buscar">
+                        <input type="search" class="form-control border-0 shadow-none p-0" name="buscar" [(ngModel)]="buscar" placeholder="Buscar en registros recientes..." aria-label="Buscar en registros recientes">
                     </div>
                     <div class="d-flex align-items-center gap-3">
                         <img src="img/v38_80.png" alt="Notificaciones" width="24" height="24" class="opacity-75">
@@ -154,7 +113,7 @@
                                         </tr>
                                     </thead>
                                     <tbody id="tabla-registros">
-                                        @for (registro of datos()?.ultimosRegistros ?? []; track registro.fecha + registro.matricula) {
+                                        @for (registro of registrosVisibles; track registro.fecha + registro.matricula) {
                                             <tr>
                                                 <td>{{ registro.fecha }}</td>
                                                 <td>{{ registro.matricula }}</td>

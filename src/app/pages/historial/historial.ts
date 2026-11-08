@@ -8,7 +8,6 @@ import { mensajeDeError } from '../../utils/errores';
 @Component({
   imports: [Layout, FormsModule, DatePipe],
   selector: 'app-historial',
-  styleUrl: './historial.css',
   templateUrl: './historial.html',
 })
 export class Historial implements OnInit {

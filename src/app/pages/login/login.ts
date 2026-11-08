@@ -10,7 +10,6 @@ import { mensajeDeError } from '../../utils/errores';
   standalone: true,
   imports: [FormsModule, RouterLink],
   templateUrl: './login.html',
-  styleUrl: './login.css'
 })
 export class Login {
   correo = '';
@@ -31,11 +30,10 @@ export class Login {
     this.auth.iniciarSesion(this.correo, this.password).subscribe({
       next: (respuesta) => {
         this.cargando.set(false);
-        this.router.navigate([
-          respuesta.rol === 'administrador' || respuesta.rol === 'superadministrador'
-            ? '/admin'
-            : '/vinculacion',
-        ]);
+        const destino = respuesta.rol === 'administrador' || respuesta.rol === 'superadministrador'
+          ? '/admin'
+          : respuesta.requiere_vinculacion ? '/vinculacion' : '/dashboard-papas';
+        void this.router.navigate([destino]);
       },
       error: (error) => {
         this.cargando.set(false);

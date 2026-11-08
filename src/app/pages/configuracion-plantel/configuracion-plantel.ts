@@ -1,15 +1,14 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Sidebar } from '../../components/sidebar/sidebar';
 import { AuthService } from '../../services/auth.service';
 import { ConfiguracionPlantel as Plantel, ModulosService } from '../../services/modulos.service';
 import { mensajeDeError } from '../../utils/errores';
 
 @Component({
   selector: 'app-configuracion-plantel',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, Sidebar],
   templateUrl: './configuracion-plantel.html',
-  styleUrl: './configuracion-plantel.css',
 })
 export class ConfiguracionPlantel implements OnInit {
   readonly datos = signal<Plantel>({ nombre: '', direccion: '', telefono: '', correo: '', configurado: false });

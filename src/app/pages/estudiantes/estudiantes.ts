@@ -1,13 +1,12 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Sidebar } from '../../components/sidebar/sidebar';
 import { EduTrackDataService, Estudiante } from '../../services/edutrack-data.service';
 import { mensajeDeError } from '../../utils/errores';
 
 @Component({
-  imports: [RouterLink, FormsModule],
+  imports: [Sidebar, FormsModule],
   selector: 'app-estudiantes',
-  styleUrl: './estudiantes.css',
   templateUrl: './estudiantes.html',
 })
 export class Estudiantes implements OnInit {

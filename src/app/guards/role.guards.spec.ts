@@ -1,15 +1,23 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRouteSnapshot, provideRouter, Router, RouterStateSnapshot, UrlTree } from '@angular/router';
 import { firstValueFrom, Observable, of, throwError } from 'rxjs';
 
 import { routes } from '../app.routes';
 import { AuthService, PerfilUsuario } from '../services/auth.service';
-import { adminGuard, authGuard, tutorGuard } from './role.guards';
+import { adminGuard, authGuard, inicioGuard, tutorGuard } from './role.guards';
 
 describe('role guards', () => {
   let perfil: PerfilUsuario;
-  let auth: { cargarPerfil: ReturnType<typeof vi.fn>; limpiarSesion: ReturnType<typeof vi.fn> };
+  let auth: {
+    cargarPerfil: ReturnType<typeof vi.fn>;
+    limpiarSesion: ReturnType<typeof vi.fn>;
+    estaAutenticado: ReturnType<typeof vi.fn>;
+    tutor: ReturnType<typeof vi.fn>;
+    rol: ReturnType<typeof vi.fn>;
+  };
   let router: Router;
 
   beforeEach(() => {
@@ -17,19 +25,22 @@ describe('role guards', () => {
     auth = {
       cargarPerfil: vi.fn(() => of(perfil)),
       limpiarSesion: vi.fn(),
+      estaAutenticado: vi.fn(() => true),
+      tutor: vi.fn(() => null),
+      rol: vi.fn(() => perfil.rol),
     };
     TestBed.configureTestingModule({
-      providers: [provideRouter(routes), { provide: AuthService, useValue: auth }],
+      providers: [provideRouter(routes), provideHttpClient(), provideHttpClientTesting(), { provide: AuthService, useValue: auth }],
     });
     router = TestBed.inject(Router);
   });
 
-  function ejecutar(guard: typeof adminGuard | typeof authGuard | typeof tutorGuard) {
-    return TestBed.runInInjectionContext(() =>
-      firstValueFrom(
-        guard({} as ActivatedRouteSnapshot, {} as RouterStateSnapshot) as Observable<boolean | UrlTree>,
-      ),
-    );
+  function ejecutar(guard: typeof adminGuard | typeof authGuard | typeof tutorGuard | typeof inicioGuard) {
+    return TestBed.runInInjectionContext(() => {
+      const resultado = guard({} as ActivatedRouteSnapshot, {} as RouterStateSnapshot);
+      if (resultado instanceof UrlTree || typeof resultado === 'boolean') return Promise.resolve(resultado);
+      return firstValueFrom(resultado as Observable<boolean | UrlTree>);
+    });
   }
 
   it('denies a tutor access to administrative routes and sends them to linking', async () => {
@@ -49,6 +60,27 @@ describe('role guards', () => {
     const resultado = await ejecutar(tutorGuard);
     expect(resultado instanceof UrlTree).toBe(true);
     expect(router.serializeUrl(resultado as UrlTree)).toBe('/admin');
+  });
+
+  it('sends authenticated users from the app root to their role home', async () => {
+    expect(router.serializeUrl(await ejecutar(inicioGuard) as UrlTree)).toBe('/dashboard-papas');
+    perfil = { tutor: null, rol: 'superadministrador' };
+    expect(router.serializeUrl(await ejecutar(inicioGuard) as UrlTree)).toBe('/admin');
+  });
+
+  it('sends unauthenticated users from the app root to login without requesting a profile', async () => {
+    auth.estaAutenticado.mockReturnValue(false);
+    expect(router.serializeUrl(await ejecutar(inicioGuard) as UrlTree)).toBe('/login');
+    expect(auth.cargarPerfil).not.toHaveBeenCalled();
+  });
+
+  it('blocks restricted pages when their URLs are entered directly', async () => {
+    await router.navigateByUrl('/configuracion');
+    expect(router.url).toBe('/vinculacion');
+
+    perfil = { tutor: null, rol: 'administrador' };
+    await router.navigateByUrl('/dashboard-papas');
+    expect(router.url).toBe('/admin');
   });
 
   it('allows a signed-in tutor into linking after checking the backend profile', async () => {
@@ -76,5 +108,8 @@ describe('role guards', () => {
     for (const path of ['dashboard-papas', 'configuracion-papas']) {
       expect(routes.find((route) => route.path === path)?.canActivate).toContain(tutorGuard);
     }
+    expect(routes.find((route) => route.path === '')?.canActivate).toContain(inicioGuard);
+    const paths = routes.map((route) => route.path);
+    expect(new Set(paths).size).toBe(paths.length);
   });
 });

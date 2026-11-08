@@ -1,64 +1,33 @@
-<div class="main-container">
-  <aside class="sidebar">
-    <div class="sidebar-content">
-      <div class="logo-section"><div class="v111_151 logo-icon"></div><span class="logo-text">AsisTec</span></div>
-      <nav class="nav-menu">
-        <a class="nav-item active" routerLink="/dashboard-papas"><div class="nav-icon home-icon"></div><span>Inicio</span></a>
-        <a class="nav-item" routerLink="/horarios"><div class="nav-icon history-icon"></div><span>Horarios</span></a>
-        <a class="nav-item" routerLink="/configuracion-papas"><div class="nav-icon config-icon"></div><span>Configuración</span></a>
-      </nav>
-      <div class="user-profile-sidebar">
-        <div class="user-avatar-small"></div><div class="user-info-sidebar">
-          <span>{{ auth.tutor()?.nombre }}</span><span>{{ auth.tutor()?.correo }}</span>
-        </div>
-      </div>
-    </div>
-  </aside>
-  <main class="content-area">
-    <header class="top-header"><div></div><div class="header-actions">
-      <div class="user-avatar-header"><div class="avatar-bg"></div><span>{{ iniciales(auth.tutor()?.nombre) }}</span></div>
-    </div></header>
-    <div class="dashboard-content">
-      <section class="welcome-section">
-        <h1>¡Hola, {{ auth.tutor()?.nombre }}!</h1>
-        <p>Aquí puedes consultar la asistencia de tus estudiantes vinculados.</p>
-      </section>
-      @if (cargando()) { <p role="status">Cargando información de asistencia…</p> }
+<div class="container-fluid min-vh-100 bg-body-tertiary">
+  <div class="row min-vh-100">
+    <app-sidebar />
+    <main class="col-12 col-md-9 col-lg-9 col-xxl-10 p-3 p-lg-4">
+      <header class="d-flex justify-content-between align-items-center mb-4">
+        <div><h1 class="h2 text-primary fw-bold mb-1">¡Hola, {{ auth.tutor()?.nombre }}!</h1><p class="text-secondary mb-0">Consulta la asistencia de tus estudiantes vinculados.</p></div>
+      </header>
+      @if (cargando()) { <div class="text-primary" role="status">Cargando información de asistencia…</div> }
       @if (error()) { <div class="alert alert-danger" role="alert">{{ error() }}</div> }
       @if (datos(); as d) {
-        <div class="main-grid">
-          <div class="left-column">
-            <div class="stats-container">
-              <article class="stat-card on-time"><span class="stat-label">Estudiantes vinculados</span><strong>{{ d.estudiantes.length }}</strong></article>
-              <article class="stat-card late"><span class="stat-label">Registros recientes</span><strong>{{ d.asistencias.length }}</strong></article>
-              <article class="stat-card no-record"><span class="stat-label">Última fecha registrada</span><strong>{{ d.asistencias[0]?.fecha ? (d.asistencias[0].fecha | date:'d MMM y') : '—' }}</strong></article>
-            </div>
-            <section class="table-container">
-              <div class="table-header-title"><span>Últimos registros de asistencia</span></div>
-              @if (d.asistencias.length) {
-                <div class="table-wrapper"><table class="attendance-table">
-                  <thead><tr><th>Estudiante</th><th>Grupo</th><th>Fecha</th><th>Entrada</th><th>Salida</th><th>Estado</th></tr></thead>
-                  <tbody>@for (r of d.asistencias; track r.fecha + r.matricula + r.horaEntrada) {
-                    <tr><td>{{ r.nombre }}</td><td>{{ r.grupo }}</td><td>{{ r.fecha | date:'d/M/y' }}</td>
-                      <td>{{ r.horaEntrada | date:'shortTime' }}</td><td>{{ r.horaSalida ? (r.horaSalida | date:'shortTime') : '—' }}</td><td>{{ r.estado }}</td></tr>
-                  }</tbody>
-                </table></div>
-              } @else { <p class="empty-state">Todavía no hay registros de asistencia para tus estudiantes.</p> }
-            </section>
-          </div>
-          <aside class="right-column">
-            <section class="profile-card"><div class="profile-avatar tutor-avatar">{{ iniciales(auth.tutor()?.nombre) }}</div><div class="profile-info">
-              <span>{{ auth.tutor()?.nombre }}</span><span>Tutor</span>
-            </div><ul class="profile-details">
-              <li>Correo: {{ auth.tutor()?.correo }}</li><li>Estudiantes vinculados: {{ d.estudiantes.length }}</li>
-            </ul></section>
-            <section class="summary-card"><h3>Estudiantes</h3>
-              @for (e of d.estudiantes; track e.id) { <div class="student-summary"><strong>{{ e.nombre }}</strong><span>Grupo {{ e.grupo }} · {{ e.matricula }}</span></div> }
-              @empty { <p>No hay estudiantes vinculados con autorización activa.</p> }
-            </section>
+        <div class="row row-cols-1 row-cols-md-3 g-3 mb-4">
+          <div class="col"><section class="card h-100 shadow-sm"><div class="card-body"><h2 class="h6 text-primary">Estudiantes vinculados</h2><p class="display-6 fw-bold mb-0">{{ d.estudiantes.length }}</p></div></section></div>
+          <div class="col"><section class="card h-100 shadow-sm"><div class="card-body"><h2 class="h6 text-primary">Registros recientes</h2><p class="display-6 fw-bold mb-0">{{ d.asistencias.length }}</p></div></section></div>
+          <div class="col"><section class="card h-100 shadow-sm"><div class="card-body"><h2 class="h6 text-primary">Última fecha registrada</h2><p class="h4 fw-bold mb-0">{{ d.asistencias[0]?.fecha ? (d.asistencias[0].fecha | date:'d MMM y') : '—' }}</p></div></section></div>
+        </div>
+        <div class="row g-4">
+          <section class="col-12 col-xl-8"><div class="card shadow-sm"><div class="card-body"><h2 class="h5 text-primary fw-bold">Últimos registros de asistencia</h2>
+            <div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-primary"><tr><th>Estudiante</th><th>Grupo</th><th>Fecha</th><th>Entrada</th><th>Salida</th><th>Estado</th></tr></thead><tbody>
+              @for (r of d.asistencias; track r.fecha + r.matricula + r.horaEntrada) { <tr><td>{{ r.nombre }}</td><td>{{ r.grupo }}</td><td>{{ r.fecha | date:'d/M/y' }}</td><td>{{ r.horaEntrada | date:'shortTime' }}</td><td>{{ r.horaSalida ? (r.horaSalida | date:'shortTime') : '—' }}</td><td>{{ r.estado }}</td></tr> }
+              @empty { <tr><td colspan="6" class="text-center text-secondary py-4">Todavía no hay registros de asistencia para tus estudiantes.</td></tr> }
+            </tbody></table></div>
+          </div></div></section>
+          <aside class="col-12 col-xl-4"><section class="card shadow-sm mb-3"><div class="card-body"><h2 class="h5 text-primary fw-bold">Mi cuenta</h2><p class="mb-1">{{ auth.tutor()?.nombre }}</p><p class="text-secondary mb-0">{{ auth.tutor()?.correo }}</p></div></section>
+            <section class="card shadow-sm"><div class="card-body"><h2 class="h5 text-primary fw-bold">Estudiantes</h2>
+              @for (e of d.estudiantes; track e.id) { <div class="border-bottom py-2"><strong>{{ e.nombre }}</strong><div class="small text-secondary">Grupo {{ e.grupo }} · {{ e.matricula }}</div></div> }
+              @empty { <p class="text-secondary mb-0">No hay estudiantes vinculados con autorización activa.</p> }
+            </div></section>
           </aside>
         </div>
       }
-    </div>
-  </main>
+    </main>
+  </div>
 </div>

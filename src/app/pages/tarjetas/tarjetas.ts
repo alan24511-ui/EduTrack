@@ -7,7 +7,6 @@ import { mensajeDeError } from '../../utils/errores';
 @Component({
   imports: [Layout, FormsModule],
   selector: 'app-tarjetas',
-  styleUrl: './tarjetas.css',
   templateUrl: './tarjetas.html',
 })
 export class Tarjetas implements OnInit {

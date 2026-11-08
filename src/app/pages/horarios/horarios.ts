@@ -1,15 +1,14 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Sidebar } from '../../components/sidebar/sidebar';
 import { AuthService } from '../../services/auth.service';
 import { EduTrackDataService, HorarioPublicado } from '../../services/edutrack-data.service';
 import { mensajeDeError } from '../../utils/errores';
 
 @Component({
   selector: 'app-horarios',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, Sidebar],
   templateUrl: './horarios.html',
-  styleUrl: './horarios.css',
 })
 export class Horarios implements OnInit {
   readonly horarios = signal<HorarioPublicado[]>([]);

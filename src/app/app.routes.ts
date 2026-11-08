@@ -1,36 +1,21 @@
 import { Routes } from '@angular/router';
-
-import { Login } from './pages/login/login';
-import { Registro } from './pages/registro/registro';
-import { VerificarOtp } from './pages/verificar-otp/verificar-otp';
-import { Vinculacion } from './pages/vinculacion/vinculacion';
-import { Dashboard } from './pages/dashboard/dashboard';
-import { Estudiantes } from './pages/estudiantes/estudiantes';
-import { Tarjetas } from './pages/tarjetas/tarjetas';
-import { Historial } from './pages/historial/historial';
-import { Admin } from './pages/admin/admin';
-import { RecuperarPassword } from './pages/recuperar-password/recuperar-password';
-import { DashPapas } from './pages/dash-papas/dash-papas';
-import { ConfiguracionPapas } from './pages/configuracion-papas/configuracion-papas';
-import { ConfiguracionPlantel } from './pages/configuracion-plantel/configuracion-plantel';
-import { Horarios } from './pages/horarios/horarios';
-import { adminGuard, authGuard, tutorGuard } from './guards/role.guards';
+import { adminGuard, authGuard, inicioGuard, tutorGuard } from './guards/role.guards';
 
 export const routes: Routes = [
-  { path: 'login', component: Login },
-  { path: 'registro', component: Registro },
-  { path: 'verificar-otp', component: VerificarOtp },
-  { path: 'recuperar-password', component: RecuperarPassword },
-  { path: 'vinculacion', component: Vinculacion, canActivate: [authGuard] },
-  { path: 'dashboard', component: Dashboard, canActivate: [authGuard] },
-  { path: 'estudiantes', component: Estudiantes, canActivate: [adminGuard] },
-  { path: 'tarjetas', component: Tarjetas, canActivate: [adminGuard] },
-  { path: 'historial', component: Historial, canActivate: [authGuard] },
-  { path: 'admin', component: Admin, canActivate: [adminGuard] },
-  { path: 'dashboard-papas', component: DashPapas, canActivate: [tutorGuard] },
-  { path: 'configuracion-papas', component: ConfiguracionPapas, canActivate: [tutorGuard] },
-  { path: 'configuracion', component: ConfiguracionPlantel, canActivate: [adminGuard] },
-  { path: 'horarios', component: Horarios, canActivate: [authGuard] },
-  { path: '', redirectTo: 'login', pathMatch: 'full' },
-  { path: '**', redirectTo: 'login' }
+  { path: 'login', loadComponent: () => import('./pages/login/login').then((m) => m.Login) },
+  { path: 'registro', loadComponent: () => import('./pages/registro/registro').then((m) => m.Registro) },
+  { path: 'verificar-otp', loadComponent: () => import('./pages/verificar-otp/verificar-otp').then((m) => m.VerificarOtp) },
+  { path: 'recuperar-password', loadComponent: () => import('./pages/recuperar-password/recuperar-password').then((m) => m.RecuperarPassword) },
+  { path: 'vinculacion', loadComponent: () => import('./pages/vinculacion/vinculacion').then((m) => m.Vinculacion), canActivate: [authGuard] },
+  { path: 'dashboard', loadComponent: () => import('./pages/dashboard/dashboard').then((m) => m.Dashboard), canActivate: [authGuard] },
+  { path: 'estudiantes', loadComponent: () => import('./pages/estudiantes/estudiantes').then((m) => m.Estudiantes), canActivate: [adminGuard] },
+  { path: 'tarjetas', loadComponent: () => import('./pages/tarjetas/tarjetas').then((m) => m.Tarjetas), canActivate: [adminGuard] },
+  { path: 'historial', loadComponent: () => import('./pages/historial/historial').then((m) => m.Historial), canActivate: [authGuard] },
+  { path: 'admin', loadComponent: () => import('./pages/admin/admin').then((m) => m.Admin), canActivate: [adminGuard] },
+  { path: 'dashboard-papas', loadComponent: () => import('./pages/dash-papas/dash-papas').then((m) => m.DashPapas), canActivate: [tutorGuard] },
+  { path: 'configuracion-papas', loadComponent: () => import('./pages/configuracion-papas/configuracion-papas').then((m) => m.ConfiguracionPapas), canActivate: [tutorGuard] },
+  { path: 'configuracion', loadComponent: () => import('./pages/configuracion-plantel/configuracion-plantel').then((m) => m.ConfiguracionPlantel), canActivate: [adminGuard] },
+  { path: 'horarios', loadComponent: () => import('./pages/horarios/horarios').then((m) => m.Horarios), canActivate: [authGuard] },
+  { path: '', loadComponent: () => import('./pages/login/login').then((m) => m.Login), canActivate: [inicioGuard], pathMatch: 'full' },
+  { path: '**', redirectTo: '' },
 ];

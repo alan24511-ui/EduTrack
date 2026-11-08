@@ -1,15 +1,14 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Sidebar } from '../../components/sidebar/sidebar';
 import { AuthService } from '../../services/auth.service';
 import { DashboardTutor, EduTrackDataService } from '../../services/edutrack-data.service';
 import { mensajeDeError } from '../../utils/errores';
 
 @Component({
   selector: 'app-dash-papas',
-  imports: [DatePipe, RouterLink],
+  imports: [DatePipe, Sidebar],
   templateUrl: './dash-papas.html',
-  styleUrl: './dash-papas.css',
 })
 export class DashPapas implements OnInit {
   readonly datos = signal<DashboardTutor | null>(null);

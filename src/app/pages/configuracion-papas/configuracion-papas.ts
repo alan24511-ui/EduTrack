@@ -1,15 +1,15 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
+import { Sidebar } from '../../components/sidebar/sidebar';
 import { AuthService } from '../../services/auth.service';
 import { ModulosService } from '../../services/modulos.service';
 import { mensajeDeError } from '../../utils/errores';
 
 @Component({
   selector: 'app-configuracion-papas',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, Sidebar],
   templateUrl: './configuracion-papas.html',
-  styleUrl: './configuracion-papas.css',
 })
 export class ConfiguracionPapas implements OnInit {
   nombre = '';
@@ -42,7 +42,7 @@ export class ConfiguracionPapas implements OnInit {
   cambiarNotificaciones(event: Event): void {
     const toggle = event.target as HTMLInputElement;
     const anterior = this.notificacionesHabilitadas;
-    this.notificacionesHabilitadas = !toggle.checked;
+    this.notificacionesHabilitadas = toggle.checked;
     this.modulos.guardarPreferenciasTutor({ notificacionesHabilitadas: this.notificacionesHabilitadas }).subscribe({
       error: (e: unknown) => { this.notificacionesHabilitadas = anterior; toggle.checked = !anterior; this.error.set(mensajeDeError(e)); },
       next: () => this.mensaje.set('Preferencias guardadas.'),

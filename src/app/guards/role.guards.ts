@@ -51,3 +51,21 @@ export const tutorGuard: CanActivateFn = () => {
     }),
   );
 };
+
+/** Resuelve el destino inicial a partir del rol que confirma FastAPI. */
+export const inicioGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+
+  if (!auth.estaAutenticado()) return router.createUrlTree(['/login']);
+
+  return auth.cargarPerfil().pipe(
+    map((perfil) => router.createUrlTree([
+      perfil.rol === 'tutor' ? '/dashboard-papas' : '/admin',
+    ])),
+    catchError((error: unknown) => {
+      if (error instanceof HttpErrorResponse && error.status === 401) auth.limpiarSesion();
+      return of(router.createUrlTree(['/login']));
+    }),
+  );
+};

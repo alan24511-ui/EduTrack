@@ -12,11 +12,11 @@
                 <span>{{ item.texto }}</span>
             </a>
         } @else {
-            <a role="button" tabindex="0"
-                class="nav-link text-white text-nowrap fw-semibold d-flex align-items-center gap-3 px-4 py-2">
+            <span aria-disabled="true" title="La función de reportes todavía no está implementada"
+                class="nav-link text-white text-nowrap fw-semibold d-flex align-items-center gap-3 px-4 py-2 opacity-50">
                 <img [src]="item.icono" alt="" width="24" height="24">
                 <span>{{ item.texto }}</span>
-            </a>
+            </span>
         }
     }
 </nav>
@@ -28,3 +28,4 @@
         <span class="small opacity-50">{{ auth.tutor()?.correo }}</span>
     </div>
 </div>
+<app-logout-button clases="btn btn-link text-white text-start text-decoration-none px-4 mt-2" />
