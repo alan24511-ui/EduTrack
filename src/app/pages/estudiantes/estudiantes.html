@@ -2,262 +2,82 @@
     <div class="container-fluid p-0">
         <div class="row g-0 min-vh-100">
 
-            <!-- Sidebar original -->
-            <aside class="col-12 col-md-4 col-lg-3 col-xxl-2 bg-primary text-white d-flex flex-column py-3 py-md-4">
-                <div class="d-flex align-items-center gap-3 px-4 mb-2 mb-md-4">
-                    <img src="img/logo_blanco.png" alt="Logotipo AsisTec" width="80" class="img-fluid">
-                    <h1 class="fs-3 fw-normal mb-0">AsisTec</h1>
-                </div>
-
-                <nav class="nav flex-row flex-nowrap flex-md-column overflow-x-auto flex-grow-1 align-content-start">
-                    <a routerLink="/admin" class="nav-link text-white text-nowrap fw-semibold d-flex align-items-center gap-3 px-4 py-2">
-                        <img src="img/v38_50.png" alt="" width="24" height="24">
-                        <span>Inicio</span>
-                    </a>
-                    <a routerLink="/estudiantes" class="nav-link text-white text-nowrap fw-semibold d-flex align-items-center gap-3 px-4 py-2 bg-white bg-opacity-25" aria-current="page">
-                        <img src="img/v38_51.png" alt="" width="24" height="24">
-                        <span>Estudiantes</span>
-                    </a>
-                    <a routerLink="/tarjetas" class="nav-link text-white text-nowrap fw-semibold d-flex align-items-center gap-3 px-4 py-2">
-                        <img src="img/v38_52.png" alt="" width="24" height="24">
-                        <span>Tarjetas</span>
-                    </a>
-                    <a routerLink="/historial" class="nav-link text-white text-nowrap fw-semibold d-flex align-items-center gap-3 px-4 py-2">
-                        <img src="img/v38_53.png" alt="" width="24" height="24">
-                        <span>Historial</span>
-                    </a>
-                    <a role="button" tabindex="0" class="nav-link text-white text-nowrap fw-semibold d-flex align-items-center gap-3 px-4 py-2">
-                        <img src="img/v38_54.png" alt="" width="24" height="24">
-                        <span>Reportes</span>
-                    </a>
-                    <a role="button" tabindex="0" class="nav-link text-white text-nowrap fw-semibold d-flex align-items-center gap-3 px-4 py-2">
-                        <img src="img/v38_55.png" alt="" width="24" height="24">
-                        <span>Configuración</span>
-                    </a>
-                </nav>
-
-                <div class="d-none d-md-flex align-items-center gap-3 px-4 pt-3 border-top border-white border-opacity-10">
-                    <img src="img/v38_56.png" alt="" width="40" height="40" class="rounded-circle bg-white bg-opacity-25">
-                    <div class="d-flex flex-column text-break">
-                        <span class="fw-semibold">Usuario</span>
-                        <span class="small opacity-50">usuario@cbtis75.edu.mx</span>
-                    </div>
-                </div>
-            </aside>
+            <app-sidebar />
 
             <!-- Contenido principal -->
             <main class="col-12 col-md-8 col-lg-9 col-xxl-10 p-4 p-lg-5">
 
-                <!-- Encabezado original -->
+                <!-- Encabezado -->
                 <header class="d-flex justify-content-between align-items-start gap-3 mb-4 mb-lg-5">
                     <div>
                         <h2 class="display-6 fw-bold text-primary mb-1">Estudiantes</h2>
                         <p class="fs-5 fw-medium text-primary mb-0">Administra la información de los alumnos</p>
                     </div>
                     <div class="d-flex align-items-center gap-3">
-                        <button type="button" class="btn border-0 p-1" aria-label="Notificaciones">
+                        <span title="Centro de notificaciones no disponible" aria-label="Centro de notificaciones no disponible">
                             <img src="img/v38_80.png" alt="" width="28" height="28">
-                        </button>
+                        </span>
                         <span class="d-inline-block rounded-circle text-bg-primary fs-5 fw-bold p-2">US</span>
                     </div>
                 </header>
 
-                <!-- Contador y búsqueda -->
+                <!-- Búsqueda y acción principal -->
                 <section class="row g-3 align-items-center justify-content-between mb-4">
-                    <div class="col-12 col-lg-4">
-                        <div class="card border-0 shadow-sm rounded-4 h-100">
-                            <div class="card-body p-4">
-                                <p class="text-secondary mb-2">Alumnos registrados</p>
-                                <h3 class="display-6 fw-bold text-primary mb-2">
-                                    {{ estudiantes.length }}
-                                </h3>
-                                <p class="small text-secondary mb-0">
-                                    Datos consultados desde la base de datos
-                                </p>
-                            </div>
+                    <div class="col-12 col-lg-8 col-xxl-6">
+                        <div class="position-relative">
+                            <img src="img/v38_81.png" alt="" width="20" height="20" class="position-absolute top-50 start-0 translate-middle-y ms-3 opacity-50 pe-none">
+                            <input type="text" name="buscar" [(ngModel)]="buscar" class="form-control border-primary-subtle rounded-4 py-3 ps-5" placeholder="Buscar por nombre, matrícula o grupo...." aria-label="Buscar alumnos">
                         </div>
                     </div>
-
-                    <div class="col-12 col-lg-8">
-                        <div class="d-flex flex-column flex-xl-row gap-3">
-                            <div class="position-relative flex-grow-1">
-                                <img src="img/v38_81.png" alt="" width="20" height="20"
-                                    class="position-absolute top-50 start-0 translate-middle-y ms-3 opacity-50 pe-none">
-                                <input
-                                    type="search"
-                                    class="form-control border-primary-subtle rounded-4 py-3 ps-5"
-                                    placeholder="Buscar por nombre, matrícula o grupo..."
-                                    aria-label="Buscar alumnos"
-                                    [(ngModel)]="busqueda">
-                            </div>
-
-                            <button type="button"
-                                class="btn btn-primary btn-lg rounded-4 fw-semibold text-nowrap"
-                                (click)="abrirFormulario()">
-                                + Nuevo alumno
-                            </button>
-                        </div>
+                    <div class="col-12 col-lg-auto">
+                        <button type="button" class="btn btn-primary btn-lg rounded-4 fw-semibold text-nowrap w-100" (click)="nuevo()">+ Nuevo alumno</button>
                     </div>
                 </section>
 
-                <!-- Mensajes -->
-                @if (mensaje) {
-                    <div class="alert alert-success alert-dismissible rounded-3" role="status">
-                        {{ mensaje }}
-                        <button type="button" class="btn-close" aria-label="Cerrar"
-                            (click)="mensaje = ''"></button>
-                    </div>
+                @if (error()) { <div class="alert alert-danger" role="alert">{{ error() }}</div> }
+                @if (aviso()) { <div class="alert alert-success" role="status">{{ aviso() }}</div> }
+                @if (formularioVisible()) {
+                    <section class="card rounded-4 shadow-sm mb-4"><div class="card-body p-4">
+                        <h3 class="fs-5 fw-bold text-primary">{{ editando() === null ? 'Registrar alumno' : 'Editar alumno' }}</h3>
+                        <form (ngSubmit)="guardar()" class="row g-3 align-items-end">
+                            <div class="col-12 col-md-6"><label for="nombre-alumno" class="form-label">Nombre completo</label><input id="nombre-alumno" name="nombre" [(ngModel)]="nombre" class="form-control" required minlength="2" maxlength="200"></div>
+                            <div class="col-12 col-md-3"><label for="matricula-alumno" class="form-label">Matrícula</label><input id="matricula-alumno" name="matricula" [(ngModel)]="matricula" class="form-control" required maxlength="80"></div>
+                            <div class="col-12 col-md-3"><label for="grupo-alumno" class="form-label">Grupo</label><input id="grupo-alumno" name="grupo" [(ngModel)]="grupo" class="form-control" required maxlength="80"></div>
+                            <div class="col-12 col-md-6"><label for="correo-alumno" class="form-label">Correo institucional (opcional)</label><input id="correo-alumno" name="correo" type="email" [(ngModel)]="correo" class="form-control"></div>
+                            <div class="col-12 d-flex gap-2"><button class="btn btn-primary" [disabled]="cargando()">{{ editando() === null ? 'Registrar' : 'Guardar cambios' }}</button><button type="button" class="btn btn-outline-secondary" (click)="cancelar()">Cancelar</button></div>
+                        </form>
+                    </div></section>
                 }
+                @if (cargando()) { <div class="small text-secondary mb-2" role="status">Cargando estudiantes…</div> }
 
-                @if (error) {
-                    <div class="alert alert-danger rounded-3" role="alert">
-                        {{ error }}
-                    </div>
-                }
-
-                <!-- Tabla original -->
-                <section class="card rounded-4 overflow-hidden border-0 shadow-sm">
-                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 p-4 border-bottom">
-                        <h3 class="h5 fw-bold text-primary mb-0">Directorio de estudiantes</h3>
-                        <span class="text-secondary small">
-                            Mostrando {{ estudiantesFiltrados.length }} de {{ estudiantes.length }} alumnos
-                        </span>
-                    </div>
-
+                <!-- Tabla de alumnos -->
+                <section class="card rounded-4 overflow-hidden">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle text-nowrap mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th class="text-primary fw-bold px-4 py-3">Matrícula</th>
-                                    <th class="text-primary fw-bold px-4 py-3">Nombre</th>
-                                    <th class="text-primary fw-bold px-4 py-3">Grupo</th>
-                                    <th class="text-primary fw-bold px-4 py-3">Correo institucional</th>
-                                    <th class="text-primary fw-bold px-4 py-3">Acciones</th>
+                                    <th class="text-primary fs-5 fw-bold px-4 py-3">Matricula</th>
+                                    <th class="text-primary fs-5 fw-bold px-4 py-3">Nombre</th>
+                                    <th class="text-primary fs-5 fw-bold px-4 py-3">Grupo</th>
+                                    <th class="text-primary fs-5 fw-bold px-4 py-3">Estado</th>
+                                    <th class="text-primary fs-5 fw-bold px-4 py-3">Acciones</th>
                                 </tr>
                             </thead>
-
-                            <tbody>
-                                @if (cargando) {
+                            <tbody id="tabla-estudiantes">
+                                @for (alumno of visibles; track alumno.id) {
                                     <tr>
-                                        <td colspan="5" class="text-center py-5">
-                                            <div class="spinner-border spinner-border-sm text-primary me-2"
-                                                role="status"></div>
-                                            Consultando estudiantes...
-                                        </td>
+                                        <td class="px-4">{{ alumno.matricula }}</td><td>{{ alumno.nombre }}</td><td>{{ alumno.grupo }}</td><td>—</td>
+                                        <td><div class="d-flex gap-2"><button type="button" class="btn btn-sm btn-outline-primary" (click)="editar(alumno)">Editar</button><button type="button" class="btn btn-sm btn-outline-secondary" (click)="alternarTutores(alumno.id)">Tutores ({{ alumno.tutores?.length ?? 0 }})</button></div></td>
                                     </tr>
-                                } @else if (estudiantesFiltrados.length === 0) {
-                                    <tr>
-                                        <td colspan="5" class="text-center text-secondary py-5">
-                                            {{ estudiantes.length === 0
-                                                ? 'No hay estudiantes para mostrar.'
-                                                : 'No se encontraron coincidencias.' }}
-                                        </td>
-                                    </tr>
-                                } @else {
-                                    @for (estudiante of estudiantesFiltrados; track estudiante.Id_Estudiante) {
-                                        <tr>
-                                            <td class="px-4 py-3 fw-semibold">
-                                                {{ estudiante.Matricula }}
-                                            </td>
-                                            <td class="px-4 py-3">
-                                                {{ estudiante.Nombre }}
-                                            </td>
-                                            <td class="px-4 py-3">
-                                                <span class="badge text-bg-light border">
-                                                    {{ estudiante.Grupo }}
-                                                </span>
-                                            </td>
-                                            <td class="px-4 py-3">
-                                                {{ estudiante.Correo_Institucional || 'Sin correo' }}
-                                            </td>
-                                            <td class="px-4 py-3">
-                                                <button type="button"
-                                                    class="btn btn-outline-danger btn-sm rounded-3"
-                                                    (click)="eliminarEstudiante(estudiante)">
-                                                    Eliminar
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    }
-                                }
+                                    @if (tutoresAbiertos() === alumno.id) { <tr><td colspan="5" class="px-4 py-2"><strong>Tutores vinculados:</strong> {{ nombresTutores(alumno) }}</td></tr> }
+                                } @empty { <tr><td colspan="5" class="text-center py-4">No hay estudiantes para mostrar.</td></tr> }
                             </tbody>
                         </table>
                     </div>
                 </section>
 
-                <!-- Formulario para registrar alumnos -->
-                @if (mostrarFormulario) {
-                    <div class="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50 d-flex align-items-center justify-content-center p-3"
-                        style="z-index: 1050;"
-                        (click)="cerrarFormulario()">
-
-                        <div class="card border-0 rounded-4 shadow-lg w-100"
-                            style="max-width: 560px;"
-                            role="dialog"
-                            aria-modal="true"
-                            aria-labelledby="titulo-formulario"
-                            (click)="$event.stopPropagation()">
-
-                            <div class="card-header bg-primary text-white p-4 d-flex justify-content-between align-items-center">
-                                <h3 id="titulo-formulario" class="h5 mb-0">Registrar estudiante</h3>
-                                <button type="button" class="btn-close btn-close-white"
-                                    aria-label="Cerrar" (click)="cerrarFormulario()"></button>
-                            </div>
-
-                            <form (ngSubmit)="guardarEstudiante()" #formEstudiante="ngForm">
-                                <div class="card-body p-4">
-                                    <div class="mb-3">
-                                        <label for="matricula" class="form-label fw-semibold">Matrícula *</label>
-                                        <input id="matricula" name="matricula"
-                                            class="form-control rounded-3"
-                                            [(ngModel)]="nuevo.Matricula"
-                                            required maxlength="50">
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label for="nombre" class="form-label fw-semibold">Nombre completo *</label>
-                                        <input id="nombre" name="nombre"
-                                            class="form-control rounded-3"
-                                            [(ngModel)]="nuevo.Nombre"
-                                            required maxlength="150">
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label for="grupo" class="form-label fw-semibold">Grupo *</label>
-                                        <input id="grupo" name="grupo"
-                                            class="form-control rounded-3"
-                                            [(ngModel)]="nuevo.Grupo"
-                                            required maxlength="50">
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label for="correo" class="form-label fw-semibold">Correo institucional</label>
-                                        <input id="correo" name="correo" type="email"
-                                            class="form-control rounded-3"
-                                            [(ngModel)]="nuevo.Correo_Institucional"
-                                            maxlength="200">
-                                    </div>
-
-                                    <p class="small text-secondary mb-0">Los campos marcados con * son obligatorios.</p>
-                                </div>
-
-                                <div class="card-footer bg-white border-0 p-4 pt-0 d-flex justify-content-end gap-2">
-                                    <button type="button" class="btn btn-outline-secondary rounded-3"
-                                        [disabled]="guardando" (click)="cerrarFormulario()">
-                                        Cancelar
-                                    </button>
-                                    <button type="submit" class="btn btn-primary rounded-3"
-                                        [disabled]="guardando || formEstudiante.invalid">
-                                        {{ guardando ? 'Guardando...' : 'Guardar estudiante' }}
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                }
-
             </main>
+
         </div>
     </div>
 </div>
-```

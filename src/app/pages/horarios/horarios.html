@@ -1,0 +1,21 @@
+<div class="container-fluid min-vh-100 bg-body-tertiary"><div class="row min-vh-100">
+  <app-sidebar />
+  <main class="col-12 col-md-9 col-lg-9 col-xxl-10 p-3 p-lg-4">
+    <header class="mb-4"><h1 class="h2 text-primary fw-bold mb-1">Horarios</h1><p class="text-secondary mb-0">Consulta los horarios vigentes por grupo.</p></header>
+    @if (error()) { <div class="alert alert-danger" role="alert">{{ error() }}</div> }
+    @if (mensaje()) { <div class="alert alert-success" role="status">{{ mensaje() }}</div> }
+    <div class="mb-3"><label for="filtro-grupo" class="form-label fw-semibold">Filtrar por grupo</label><input id="filtro-grupo" class="form-control" [ngModel]="filtroGrupo()" (ngModelChange)="filtroGrupo.set($event)" placeholder="Escribe el grupo"></div>
+    @if (admin()) { <form class="card shadow-sm p-3 p-lg-4 mb-4" (ngSubmit)="guardar()"><h2 class="h5 text-primary fw-bold">{{ editando() === null ? 'Agregar horario' : 'Editar horario' }}</h2>
+      <div class="row g-3"><div class="col-12 col-md-4 col-xl"><label for="dia" class="form-label">Día</label><input id="dia" name="dia" class="form-control" [ngModel]="formulario().diaSemana" (ngModelChange)="set('diaSemana',$event)" required minlength="3" maxlength="20"></div>
+      <div class="col-12 col-md-4 col-xl"><label for="grupo" class="form-label">Grupo</label><input id="grupo" name="grupo" class="form-control" [ngModel]="formulario().grupo" (ngModelChange)="set('grupo',$event)" required maxlength="80"></div>
+      <div class="col-6 col-md-4 col-xl"><label for="entrada" class="form-label">Entrada</label><input id="entrada" name="entrada" class="form-control" type="time" [ngModel]="formulario().horaEntrada" (ngModelChange)="set('horaEntrada',$event)" required></div>
+      <div class="col-6 col-md-4 col-xl"><label for="salida" class="form-label">Salida</label><input id="salida" name="salida" class="form-control" type="time" [ngModel]="formulario().horaSalida" (ngModelChange)="set('horaSalida',$event)" required></div>
+      <div class="col-12 col-md-4 col-xl"><label for="tolerancia" class="form-label">Tolerancia (min)</label><input id="tolerancia" name="tolerancia" class="form-control" type="number" min="0" max="240" [ngModel]="formulario().tolerancia" (ngModelChange)="set('tolerancia',$event)" required></div></div>
+      <div class="d-flex gap-2 mt-3"><button class="btn btn-primary" type="submit">{{ editando() === null ? 'Guardar y publicar' : 'Guardar cambios y publicar' }}</button>@if (editando() !== null) { <button type="button" class="btn btn-outline-secondary" (click)="cancelarEdicion()">Cancelar</button> }</div>
+    </form> }
+    <div class="card shadow-sm"><div class="card-body"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-primary"><tr><th>Grupo</th><th>Día</th><th>Entrada</th><th>Salida</th><th>Tolerancia</th>@if (admin()) { <th>Administración</th> }</tr></thead><tbody>
+      @for (h of visibles; track h.id) { <tr><td>{{ h.grupo }}</td><td>{{ h.diaSemana }}</td><td>{{ h.horaEntrada }}</td><td>{{ h.horaSalida }}</td><td>{{ h.tolerancia }} min</td>@if (admin()) { <td class="text-nowrap"><button class="btn btn-sm btn-outline-primary me-2" type="button" (click)="editar(h)">Editar</button><button class="btn btn-sm btn-outline-danger" type="button" (click)="eliminar(h)">Eliminar</button></td> }</tr> }
+      @empty { <tr><td [attr.colspan]="admin() ? 6 : 5" class="text-center text-secondary py-4">No hay horarios disponibles.</td></tr> }
+    </tbody></table></div></div></div>
+  </main>
+</div></div>

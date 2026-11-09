@@ -1,0 +1,16 @@
+<div class="container-fluid min-vh-100 bg-body-tertiary"><div class="row min-vh-100">
+  <app-sidebar />
+  <main class="col-12 col-md-9 col-lg-9 col-xxl-10 p-3 p-lg-4">
+    <header class="mb-4"><h1 class="h2 text-primary fw-bold mb-1">Configuración del plantel</h1><p class="text-secondary mb-0">Información institucional.</p></header>
+    @if (error()) { <div class="alert alert-danger" role="alert">{{ error() }}</div> }
+    @if (mensaje()) { <div class="alert alert-success" role="status">{{ mensaje() }}</div> }
+    <div class="row"><div class="col-12 col-xl-8"><section class="card shadow-sm"><div class="card-header bg-primary text-white"><h2 class="h5 mb-0">Información del plantel</h2></div><div class="card-body">
+      <form class="row g-3" (ngSubmit)="guardar()"><div class="col-12"><label for="plantel-nombre" class="form-label">Nombre del plantel</label><input id="plantel-nombre" class="form-control" name="nombre" [ngModel]="datos().nombre" (ngModelChange)="actualizar('nombre',$event)" required minlength="2" maxlength="200"></div>
+        <div class="col-12"><label for="plantel-direccion" class="form-label">Dirección</label><input id="plantel-direccion" class="form-control" name="direccion" [ngModel]="datos().direccion" (ngModelChange)="actualizar('direccion',$event)" required minlength="2" maxlength="250"></div>
+        <div class="col-12 col-md-6"><label for="plantel-telefono" class="form-label">Teléfono</label><input id="plantel-telefono" class="form-control" name="telefono" [ngModel]="datos().telefono" (ngModelChange)="actualizar('telefono',$event)" required minlength="5" maxlength="30" type="tel"></div>
+        <div class="col-12 col-md-6"><label for="plantel-correo" class="form-label">Correo institucional</label><input id="plantel-correo" class="form-control" name="correo" [ngModel]="datos().correo" (ngModelChange)="actualizar('correo',$event)" required email maxlength="254" type="email"></div>
+        <div class="col-12"><button class="btn btn-primary" type="submit" [disabled]="guardando()">{{ guardando() ? 'Guardando…' : 'Guardar información' }}</button></div>
+      </form>
+    </div></section></div></div>
+  </main>
+</div></div>

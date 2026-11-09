@@ -2,48 +2,7 @@
     <div class="container-fluid p-0">
         <div class="row g-0 min-vh-100">
 
-            <!-- Sidebar -->
-            <aside class="col-12 col-md-4 col-lg-3 col-xxl-2 bg-primary text-white d-flex flex-column py-3 py-md-4">
-                <div class="d-flex align-items-center gap-3 px-4 mb-2 mb-md-4">
-                    <img src="img/logo_blanco.png" alt="Logotipo AsisTec" width="80" class="img-fluid">
-                    <h1 class="fs-3 fw-normal mb-0">AsisTec</h1>
-                </div>
-
-                <nav class="nav flex-row flex-nowrap flex-md-column overflow-x-auto flex-grow-1 align-content-start">
-                    <a routerLink="/admin" class="nav-link text-white text-nowrap fw-semibold d-flex align-items-center gap-3 px-4 py-2 bg-white bg-opacity-25" aria-current="page">
-                        <img src="img/v38_50.png" alt="" width="24" height="24">
-                        <span>Inicio</span>
-                    </a>
-                    <a routerLink="/estudiantes" class="nav-link text-white text-nowrap fw-semibold d-flex align-items-center gap-3 px-4 py-2">
-                        <img src="img/v38_51.png" alt="" width="24" height="24">
-                        <span>Estudiantes</span>
-                    </a>
-                    <a routerLink="/tarjetas" class="nav-link text-white text-nowrap fw-semibold d-flex align-items-center gap-3 px-4 py-2">
-                        <img src="img/v38_52.png" alt="" width="24" height="24">
-                        <span>Tarjetas</span>
-                    </a>
-                    <a routerLink="/historial" class="nav-link text-white text-nowrap fw-semibold d-flex align-items-center gap-3 px-4 py-2">
-                        <img src="img/v38_53.png" alt="" width="24" height="24">
-                        <span>Historial</span>
-                    </a>
-                    <a role="button" tabindex="0" class="nav-link text-white text-nowrap fw-semibold d-flex align-items-center gap-3 px-4 py-2">
-                        <img src="img/v38_54.png" alt="" width="24" height="24">
-                        <span>Reportes</span>
-                    </a>
-                    <a role="button" tabindex="0" class="nav-link text-white text-nowrap fw-semibold d-flex align-items-center gap-3 px-4 py-2">
-                        <img src="img/v38_55.png" alt="" width="24" height="24">
-                        <span>Configuración</span>
-                    </a>
-                </nav>
-
-                <div class="d-none d-md-flex align-items-center gap-3 px-4 pt-3 border-top border-white border-opacity-10">
-                    <img src="img/v38_56.png" alt="" width="40" height="40" class="rounded-circle bg-white bg-opacity-25">
-                    <div class="d-flex flex-column text-break">
-                        <span class="fw-semibold">Usuario</span>
-                        <span class="small opacity-50">usuario@cbtis75.edu.mx</span>
-                    </div>
-                </div>
-            </aside>
+            <app-sidebar />
 
             <!-- Contenido principal -->
             <main class="col-12 col-md-8 col-lg-9 col-xxl-10">
@@ -52,7 +11,7 @@
                 <header class="sticky-top bg-white shadow-sm d-flex align-items-center justify-content-between gap-3 px-4 py-3">
                     <div class="d-flex align-items-center gap-3 w-50">
                         <img src="img/v38_81.png" alt="" width="20" height="20" class="opacity-50">
-                        <input type="text" class="form-control border-0 shadow-none p-0" placeholder="Buscar..." aria-label="Buscar">
+                        <input type="search" class="form-control border-0 shadow-none p-0" name="buscar" [(ngModel)]="buscar" placeholder="Buscar en registros recientes..." aria-label="Buscar en registros recientes">
                     </div>
                     <div class="d-flex align-items-center gap-3">
                         <img src="img/v38_80.png" alt="Notificaciones" width="24" height="24" class="opacity-75">
@@ -65,6 +24,8 @@
                         <h2 class="fs-4 fw-bold text-primary mb-1">Panel de Control</h2>
                         <p class="fs-6 fw-medium text-primary opacity-75 mb-0">Resumen general de asistencia</p>
                     </div>
+                    @if (error()) { <div class="alert alert-danger" role="alert">{{ error() }}</div> }
+                    @if (cargando()) { <div class="small text-secondary mb-3" role="status">Cargando datos…</div> }
 
                     <!-- Tarjetas estadísticas -->
                     <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3 mb-4">
@@ -74,7 +35,7 @@
                                     <img src="img/v42_4.png" alt="" width="40" height="40">
                                     <div class="d-flex flex-column">
                                         <span class="small fw-medium text-primary mb-1">Alumnos registrados</span>
-                                        <span id="stat-registrados" class="fs-2 fw-bold text-primary">&nbsp;</span>
+                                        <span id="stat-registrados" class="fs-2 fw-bold text-primary">{{ datos()?.totalEstudiantes ?? '—' }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -85,7 +46,7 @@
                                     <img src="img/v42_13.png" alt="" width="40" height="40">
                                     <div class="d-flex flex-column">
                                         <span class="small fw-medium text-primary mb-1">A tiempo</span>
-                                        <span id="stat-a-tiempo" class="fs-2 fw-bold text-success">&nbsp;</span>
+                                        <span id="stat-a-tiempo" class="fs-2 fw-bold text-success">—</span>
                                     </div>
                                 </div>
                             </div>
@@ -96,7 +57,7 @@
                                     <img src="img/v42_26.png" alt="" width="40" height="40">
                                     <div class="d-flex flex-column">
                                         <span class="small fw-medium text-primary mb-1">Retardos</span>
-                                        <span id="stat-retardos" class="fs-2 fw-bold text-warning">&nbsp;</span>
+                                        <span id="stat-retardos" class="fs-2 fw-bold text-warning">—</span>
                                     </div>
                                 </div>
                             </div>
@@ -107,12 +68,33 @@
                                     <img src="img/v42_27.png" alt="" width="40" height="40">
                                     <div class="d-flex flex-column">
                                         <span class="small fw-medium text-primary mb-1">Sin registro</span>
-                                        <span id="stat-sin-registro" class="fs-2 fw-bold text-danger">&nbsp;</span>
+                                        <span id="stat-sin-registro" class="fs-2 fw-bold text-danger">{{ datos()?.inasistencias ?? '—' }}</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+
+                    <div class="d-flex flex-column flex-md-row justify-content-between gap-2 mb-4 small">
+                        <span><strong>Tarjetas vigentes:</strong> {{ datos()?.tarjetasVigentes ?? '—' }}</span>
+                        <span><strong>Asistencias de hoy:</strong> {{ datos()?.asistenciasHoy ?? '—' }}</span>
+                    </div>
+
+                    <section class="card rounded-4 shadow-sm mb-4">
+                        <div class="card-body p-4">
+                            <h3 class="fs-5 fw-bold text-primary mb-3">Estado del lector</h3>
+                            <ul class="list-group list-group-flush">
+                                @for (lector of datos()?.lectores ?? []; track lector.nombre) {
+                                    <li class="list-group-item d-flex justify-content-between gap-3 px-0">
+                                        <span>{{ lector.nombre }} · {{ lector.estado }}</span>
+                                        <span [class.text-success]="lector.conectado" [class.text-danger]="!lector.conectado">
+                                            {{ lector.conectado ? 'Conectado' : 'Sin contacto reciente' }}
+                                        </span>
+                                    </li>
+                                } @empty { <li class="list-group-item px-0">No hay lectores registrados.</li> }
+                            </ul>
+                        </div>
+                    </section>
 
                     <!-- Últimos registros -->
                     <div class="card rounded-4 shadow-sm">
@@ -130,7 +112,18 @@
                                             <th class="text-primary">Estado</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="tabla-registros"></tbody>
+                                    <tbody id="tabla-registros">
+                                        @for (registro of registrosVisibles; track registro.fecha + registro.matricula) {
+                                            <tr>
+                                                <td>{{ registro.fecha }}</td>
+                                                <td>{{ registro.matricula }}</td>
+                                                <td>{{ registro.nombre }}</td>
+                                                <td>{{ registro.grupo }}</td>
+                                                <td>{{ registro.horaEntrada ? (registro.horaEntrada | date:'shortTime') : '—' }} / {{ registro.horaSalida ? (registro.horaSalida | date:'shortTime') : '—' }}</td>
+                                                <td>{{ registro.estado }}</td>
+                                            </tr>
+                                        } @empty { <tr><td colspan="6" class="text-center py-3">No hay asistencias registradas.</td></tr> }
+                                    </tbody>
                                 </table>
                             </div>
                         </div>

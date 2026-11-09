@@ -1,17 +1,20 @@
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
+from fastapi import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
 from psycopg import Error as PsycopgError
-from psycopg import errors
-from psycopg.rows import dict_row
 
+from app.config import obtener_settings
 from app.database import obtener_conexion
-
-
-# =========================================================
-# CONFIGURACIÓN DE LA API
-# =========================================================
+from app.routes import auth as rutas_auth
+from app.routes import vinculacion as rutas_vinculacion
+from app.routes import estudiantes as rutas_estudiantes
+from app.routes import tarjetas as rutas_tarjetas
+from app.routes import asistencias as rutas_asistencias
+from app.routes import dashboard as rutas_dashboard
+from app.routes import rfid as rutas_rfid
+from app.routes import configuracion as rutas_configuracion
+from app.routes import horarios as rutas_horarios
 
 app = FastAPI(
     title="EduTrack API",
@@ -19,40 +22,25 @@ app = FastAPI(
     version="1.0.0",
 )
 
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:4200",
-        "http://127.0.0.1:4200",
-    ],
+    allow_origins=obtener_settings().lista_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+app.include_router(rutas_auth.router)
+app.include_router(rutas_vinculacion.router)
+app.include_router(rutas_estudiantes.router)
+app.include_router(rutas_tarjetas.router)
+app.include_router(rutas_asistencias.router)
+app.include_router(rutas_dashboard.router)
+app.include_router(rutas_dashboard.router_tutores)
+app.include_router(rutas_rfid.router)
+app.include_router(rutas_configuracion.router)
+app.include_router(rutas_horarios.router)
 
-# =========================================================
-# MODELOS
-# =========================================================
-
-class NuevoEstudiante(BaseModel):
-    Matricula: str = Field(min_length=1, max_length=50)
-    Nombre: str = Field(min_length=1, max_length=150)
-    Grupo: str = Field(min_length=1, max_length=50)
-    Correo_Institucional: str | None = Field(
-        default=None,
-        max_length=254,
-    )
-
-
-class LecturaTarjeta(BaseModel):
-    uid: str
-
-
-# =========================================================
-# ESTADO Y CONEXIÓN CON LA BASE DE DATOS
-# =========================================================
 
 @app.get("/health", tags=["Estado"])
 def health_check():
@@ -61,14 +49,19 @@ def health_check():
         "message": "EduTrack API funcionando correctamente",
     }
 
-
 @app.get("/health/db", tags=["Estado"])
-def verificar_base_datos():
+def comprobar_base_datos():
     try:
         with obtener_conexion() as conexion:
             with conexion.cursor() as cursor:
                 cursor.execute("SELECT 1")
-                cursor.fetchone()
+                resultado = cursor.fetchone()
+
+        if resultado != (1,):
+            raise HTTPException(
+                status_code=503,
+                detail="La base de datos no respondió correctamente.",
+            )
 
         return {
             "status": "ok",
@@ -76,242 +69,8 @@ def verificar_base_datos():
             "message": "Conexión con PostgreSQL exitosa",
         }
 
-    except PsycopgError as error:
-        print(f"ERROR DE CONEXIÓN CON LA BASE DE DATOS: {error}")
-
+    except PsycopgError:
         raise HTTPException(
             status_code=503,
-            detail="No fue posible conectar con PostgreSQL.",
+            detail="No fue posible conectar con PostgreSQL. Revisa la configuración.",
         )
-
-
-# =========================================================
-# CONSULTAR ESTUDIANTES
-# =========================================================
-
-@app.get("/estudiantes", tags=["Estudiantes"])
-def obtener_estudiantes():
-    try:
-        with obtener_conexion() as conexion:
-            with conexion.cursor(row_factory=dict_row) as cursor:
-                cursor.execute(
-                    """
-                    SELECT
-                        "Id_Estudiante",
-                        "Matricula",
-                        "Nombre",
-                        "Grupo",
-                        "Correo_Institucional"
-                    FROM public."Estudiantes"
-                    ORDER BY "Id_Estudiante" ASC
-                    """
-                )
-
-                estudiantes = cursor.fetchall()
-
-        return estudiantes
-
-    except PsycopgError as error:
-        print(f"ERROR AL CONSULTAR ESTUDIANTES: {error}")
-
-        raise HTTPException(
-            status_code=503,
-            detail="No fue posible consultar los estudiantes.",
-        )
-
-
-# =========================================================
-# CONTAR ESTUDIANTES
-# =========================================================
-
-@app.get("/estudiantes/count", tags=["Estudiantes"])
-def contar_estudiantes():
-    try:
-        with obtener_conexion() as conexion:
-            with conexion.cursor() as cursor:
-                cursor.execute(
-                    """
-                    SELECT COUNT(*)
-                    FROM public."Estudiantes"
-                    """
-                )
-
-                total = cursor.fetchone()[0]
-
-        return {"total": total}
-
-    except PsycopgError as error:
-        print(f"ERROR AL CONTAR ESTUDIANTES: {error}")
-
-        raise HTTPException(
-            status_code=503,
-            detail="No fue posible contar los estudiantes.",
-        )
-
-
-# =========================================================
-# REGISTRAR ESTUDIANTE
-# =========================================================
-
-@app.post(
-    "/estudiantes",
-    tags=["Estudiantes"],
-    status_code=201,
-)
-def crear_estudiante(estudiante: NuevoEstudiante):
-    matricula = estudiante.Matricula.strip()
-    nombre = estudiante.Nombre.strip()
-    grupo = estudiante.Grupo.strip()
-
-    correo = estudiante.Correo_Institucional
-    correo = correo.strip() if correo else None
-
-    # Validar campos obligatorios.
-    if not matricula or not nombre or not grupo:
-        raise HTTPException(
-            status_code=422,
-            detail="Matrícula, nombre y grupo son obligatorios.",
-        )
-
-    # Convertir un correo vacío en NULL.
-    if correo == "":
-        correo = None
-
-    try:
-        with obtener_conexion() as conexion:
-            with conexion.cursor(row_factory=dict_row) as cursor:
-                cursor.execute(
-                    """
-                    INSERT INTO public."Estudiantes"
-                    (
-                        "Matricula",
-                        "Nombre",
-                        "Grupo",
-                        "Correo_Institucional"
-                    )
-                    VALUES (%s, %s, %s, %s)
-                    RETURNING
-                        "Id_Estudiante",
-                        "Matricula",
-                        "Nombre",
-                        "Grupo",
-                        "Correo_Institucional"
-                    """,
-                    (
-                        matricula,
-                        nombre,
-                        grupo,
-                        correo,
-                    ),
-                )
-
-                nuevo_estudiante = cursor.fetchone()
-
-        return nuevo_estudiante
-
-    except errors.UniqueViolation:
-        raise HTTPException(
-            status_code=409,
-            detail=(
-                "La matrícula o el correo institucional "
-                "ya están registrados."
-            ),
-        )
-
-    except PsycopgError as error:
-        print(f"ERROR AL REGISTRAR ESTUDIANTE: {error}")
-
-        raise HTTPException(
-            status_code=503,
-            detail="No fue posible registrar el estudiante.",
-        )
-
-
-# =========================================================
-# ELIMINAR ESTUDIANTE
-# =========================================================
-
-@app.delete(
-    "/estudiantes/{id}",
-    tags=["Estudiantes"],
-)
-def eliminar_estudiante(id: int):
-    if id <= 0:
-        raise HTTPException(
-            status_code=422,
-            detail="El identificador debe ser positivo.",
-        )
-
-    try:
-        with obtener_conexion() as conexion:
-            with conexion.cursor() as cursor:
-                cursor.execute(
-                    """
-                    DELETE FROM public."Estudiantes"
-                    WHERE "Id_Estudiante" = %s
-                    RETURNING "Id_Estudiante"
-                    """,
-                    (id,),
-                )
-
-                eliminado = cursor.fetchone()
-
-                if eliminado is None:
-                    raise HTTPException(
-                        status_code=404,
-                        detail="El estudiante no existe.",
-                    )
-
-        return {
-            "message": "Estudiante eliminado correctamente."
-        }
-
-    except HTTPException:
-        raise
-
-    except PsycopgError as error:
-        print(f"ERROR AL ELIMINAR ESTUDIANTE: {error}")
-
-        raise HTTPException(
-            status_code=409,
-            detail=(
-                "No fue posible eliminar el estudiante. "
-                "Puede tener registros relacionados."
-            ),
-        )
-
-
-# =========================================================
-# SIMULADOR DE LECTURA DE TARJETAS
-# =========================================================
-
-TARJETAS_DE_PRUEBA = {
-    "A1B2C3D4",
-}
-
-
-@app.post("/device/scan", tags=["Dispositivos"])
-def escanear_tarjeta(lectura: LecturaTarjeta):
-    uid = lectura.uid.strip().upper()
-
-    if not uid or len(uid) > 64:
-        raise HTTPException(
-            status_code=422,
-            detail="El UID no es válido.",
-        )
-
-    if uid not in TARJETAS_DE_PRUEBA:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "status": "unknown",
-                "uid": uid,
-                "message": "Tarjeta no registrada",
-            },
-        )
-
-    return {
-        "status": "recognized",
-        "uid": uid,
-        "message": "Tarjeta reconocida correctamente",
-    }

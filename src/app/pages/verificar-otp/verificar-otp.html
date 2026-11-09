@@ -1,0 +1,53 @@
+<main class="position-relative overflow-hidden min-vh-100 d-flex align-items-center py-4 py-sm-5 bg-primary">
+    <div class="container position-relative z-1">
+        <div class="row justify-content-center">
+            <div class="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-5">
+
+                <div class="card border-0 rounded-5 shadow">
+                    <div class="card-body p-4 p-sm-5">
+                        <div class="text-center mb-4">
+                            <img src="img/logo_morado.png" alt="Logotipo AsisTec" width="110" height="110" class="mb-2">
+                            <h2 class="fs-4 fw-bold text-primary mb-1">Verifica tu correo</h2>
+                            <p class="fw-bold text-primary mb-0">Introduce el código que enviamos a tu correo</p>
+                        </div>
+
+                        @if (error()) {
+                            <div class="alert alert-danger rounded-3 fw-semibold" role="alert">
+                                {{ error() }}
+                            </div>
+                        }
+                        @if (aviso()) {
+                            <div class="alert alert-success rounded-3 fw-semibold" role="status">{{ aviso() }}</div>
+                        }
+
+                        <form (ngSubmit)="verificar()" class="d-flex flex-column gap-3">
+                            <div>
+                                <label for="correo" class="form-label fw-semibold">Correo electrónico</label>
+                                <input type="email" id="correo" name="correo" [(ngModel)]="correo"
+                                    class="form-control border-primary py-3" placeholder="usuario@cbtis75.edu.mx" required>
+                            </div>
+
+                            <div>
+                                <label for="token" class="form-label fw-semibold">Código de verificación</label>
+                                <input type="text" id="token" name="token" [(ngModel)]="token"
+                                    class="form-control border-primary py-3 text-center fs-4 fw-bold font-monospace"
+                                    placeholder="000000" inputmode="numeric" autocomplete="one-time-code"
+                                    maxlength="10" required>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100 py-3 fw-semibold mt-1" [disabled]="cargando()">
+                                {{ cargando() ? 'Verificando...' : 'Verificar cuenta' }}
+                            </button>
+                            <button type="button" class="btn btn-outline-primary w-100 py-2 fw-semibold" [disabled]="cargando() || !correo" (click)="reenviar()">Reenviar código</button>
+
+                            <a routerLink="/registro" class="link-primary link-underline-opacity-0 link-underline-opacity-100-hover fw-bold text-center">
+                                Volver al registro
+                            </a>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</main>

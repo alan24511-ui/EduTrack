@@ -1,223 +1,75 @@
-
-import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
-
-import {
-  Api,
-  Estudiante,
-  NuevoEstudiante,
-} from '../../services/api';
+import { Sidebar } from '../../components/sidebar/sidebar';
+import { EduTrackDataService, Estudiante } from '../../services/edutrack-data.service';
+import { mensajeDeError } from '../../utils/errores';
 
 @Component({
+  imports: [Sidebar, FormsModule],
   selector: 'app-estudiantes',
-  standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
-  styleUrl: './estudiantes.css',
   templateUrl: './estudiantes.html',
 })
 export class Estudiantes implements OnInit {
-  private readonly api = inject(Api);
+  readonly lista = signal<Estudiante[]>([]);
+  readonly error = signal<string | null>(null);
+  readonly aviso = signal<string | null>(null);
+  readonly cargando = signal(false);
+  readonly editando = signal<number | null>(null);
+  readonly formularioVisible = signal(false);
+  readonly tutoresAbiertos = signal<number | null>(null);
+  readonly grupos = computed(() => [...new Set(this.lista().map((s) => s.grupo))].sort());
+  buscar = '';
+  grupoFiltro = '';
+  nombre = '';
+  matricula = '';
+  grupo = '';
+  correo = '';
 
-  estudiantes: Estudiante[] = [];
-  busqueda = '';
+  constructor(private readonly api: EduTrackDataService) {}
+  ngOnInit(): void { this.cargar(); }
 
-  cargando = false;
-  guardando = false;
-  mostrarFormulario = false;
+  nuevo(): void { this.limpiar(); this.formularioVisible.set(true); }
 
-  error = '';
-  mensaje = '';
-
-  nuevo: NuevoEstudiante = this.formularioVacio();
-
-  ngOnInit(): void {
-    this.cargarEstudiantes();
-  }
-
-  // Filtra los estudiantes por matrícula, nombre, grupo o correo.
-  get estudiantesFiltrados(): Estudiante[] {
-    const texto = this.busqueda.trim().toLowerCase();
-
-    if (!texto) {
-      return this.estudiantes;
-    }
-
-    return this.estudiantes.filter((estudiante) =>
-      [
-        estudiante.Matricula,
-        estudiante.Nombre,
-        estudiante.Grupo,
-        estudiante.Correo_Institucional ?? '',
-      ].some((valor) =>
-        String(valor ?? '').toLowerCase().includes(texto),
-      ),
-    );
-  }
-
-  // Total de estudiantes cargados en la tabla.
-  get totalEstudiantes(): number {
-    return this.estudiantes.length;
-  }
-
-  private formularioVacio(): NuevoEstudiante {
-    return {
-      Matricula: '',
-      Nombre: '',
-      Grupo: '',
-      Correo_Institucional: '',
-    };
-  }
-
-  // Consulta los estudiantes desde FastAPI y Supabase.
-  cargarEstudiantes(): void {
-    this.cargando = true;
-    this.error = '';
-
-    console.log('Consultando estudiantes en la API...');
-
-    this.api.obtenerEstudiantes().subscribe({
-      next: (datos) => {
-        console.log('Respuesta de la API:', datos);
-        console.log('¿Es una lista?', Array.isArray(datos));
-        console.log('Cantidad recibida:', datos?.length);
-
-        if (!Array.isArray(datos)) {
-          this.estudiantes = [];
-          this.error =
-            'La API respondió, pero los datos no tienen el formato esperado.';
-          this.cargando = false;
-          return;
-        }
-
-        this.estudiantes = datos;
-        this.cargando = false;
-
-        console.log(
-          'Cargando después de recibir datos:',
-          this.cargando,
-        );
-      },
-
-      error: (err) => {
-        console.error('Error al cargar estudiantes:', err);
-
-        this.error =
-          err.error?.detail ??
-          'No se pudieron cargar los estudiantes. Verifica que la API esté activa.';
-
-        this.cargando = false;
-      },
+  cargar(): void {
+    this.cargando.set(true);
+    this.api.estudiantes().subscribe({
+      next: (data) => { this.lista.set(data); this.cargando.set(false); },
+      error: (e) => { this.error.set(mensajeDeError(e)); this.cargando.set(false); },
     });
   }
 
-  // Abre el formulario para registrar un alumno.
-  abrirFormulario(): void {
-    this.nuevo = this.formularioVacio();
-    this.error = '';
-    this.mensaje = '';
-    this.mostrarFormulario = true;
+  get visibles(): Estudiante[] {
+    const q = this.buscar.trim().toLocaleLowerCase();
+    return this.lista().filter((s) => (!this.grupoFiltro || s.grupo === this.grupoFiltro)
+      && (!q || `${s.nombre} ${s.matricula} ${s.grupo}`.toLocaleLowerCase().includes(q)));
   }
 
-  // Cierra el formulario.
-  cerrarFormulario(): void {
-    if (!this.guardando) {
-      this.mostrarFormulario = false;
-      this.error = '';
-    }
+  nombresTutores(s: Estudiante): string {
+    return (s.tutores ?? []).map((t) => t.nombre).join(', ') || 'Sin tutor';
   }
 
-  // Registra un estudiante en la base de datos.
-  guardarEstudiante(): void {
-    this.error = '';
-    this.mensaje = '';
-
-    const estudiante: NuevoEstudiante = {
-      Matricula: this.nuevo.Matricula.trim(),
-      Nombre: this.nuevo.Nombre.trim(),
-      Grupo: this.nuevo.Grupo.trim(),
-      Correo_Institucional:
-        this.nuevo.Correo_Institucional?.trim() || null,
-    };
-
-    if (
-      !estudiante.Matricula ||
-      !estudiante.Nombre ||
-      !estudiante.Grupo
-    ) {
-      this.error =
-        'Completa la matrícula, el nombre y el grupo.';
-      return;
-    }
-
-    this.guardando = true;
-
-    this.api.crearEstudiante(estudiante).subscribe({
-      next: () => {
-        this.guardando = false;
-        this.mostrarFormulario = false;
-        this.nuevo = this.formularioVacio();
-        this.mensaje =
-          'Estudiante registrado correctamente.';
-
-        this.cargarEstudiantes();
-      },
-
-      
-error: (err) => {
-  console.error('ERROR COMPLETO AL REGISTRAR:', err);
-  console.error('Código HTTP:', err.status);
-  console.error('Respuesta del servidor:', err.error);
-
-  const detalle = err.error?.detail;
-
-  this.error =
-    typeof detalle === 'string'
-      ? detalle
-      : detalle
-        ? JSON.stringify(detalle)
-        : `No fue posible registrar al estudiante. Error HTTP: ${err.status}`;
-
-  this.guardando = false;
-},
-
+  guardar(): void {
+    this.error.set(null); this.aviso.set(null); this.cargando.set(true);
+    const payload = { nombre: this.nombre.trim(), matricula: this.matricula.trim(), grupo: this.grupo.trim(), correo_institucional: this.correo.trim() || null };
+    const solicitud = this.editando() === null
+      ? this.api.crearEstudiante(payload)
+      : this.api.actualizarEstudiante(this.editando()!, payload);
+    solicitud.subscribe({
+      next: () => { this.aviso.set(this.editando() === null ? 'Estudiante registrado.' : 'Cambios guardados.'); this.limpiar(); this.cargar(); },
+      error: (e) => { this.error.set(mensajeDeError(e)); this.cargando.set(false); },
     });
   }
 
-  // Elimina un estudiante después de pedir confirmación.
-  eliminarEstudiante(estudiante: Estudiante): void {
-    const confirmar = window.confirm(
-      `¿Seguro que deseas eliminar a ${estudiante.Nombre} (${estudiante.Matricula})? Esta acción no se puede deshacer.`,
-    );
+  editar(s: Estudiante): void {
+    this.formularioVisible.set(true);
+    this.editando.set(s.id); this.nombre = s.nombre; this.matricula = s.matricula;
+    this.grupo = s.grupo; this.correo = s.correoInstitucional ?? '';
+  }
 
-    if (!confirmar) {
-      return;
-    }
-
-    this.error = '';
-    this.mensaje = '';
-
-    this.api
-      .eliminarEstudiante(estudiante.Id_Estudiante)
-      .subscribe({
-        next: () => {
-          this.mensaje =
-            'Estudiante eliminado correctamente.';
-
-          this.cargarEstudiantes();
-        },
-
-        error: (err) => {
-          console.error(
-            'Error al eliminar estudiante:',
-            err,
-          );
-
-          this.error =
-            err.error?.detail ??
-            'No fue posible eliminar al estudiante.';
-        },
-      });
+  cancelar(): void { this.limpiar(); }
+  alternarTutores(id: number): void { this.tutoresAbiertos.set(this.tutoresAbiertos() === id ? null : id); }
+  private limpiar(): void {
+    this.editando.set(null); this.nombre = ''; this.matricula = ''; this.grupo = ''; this.correo = '';
+    this.cargando.set(false); this.formularioVisible.set(false);
   }
 }

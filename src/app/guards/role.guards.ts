@@ -1,0 +1,71 @@
+import { inject } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { CanActivateFn, Router } from '@angular/router';
+import { catchError, map, of } from 'rxjs';
+
+import { AuthService } from '../services/auth.service';
+
+export const authGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+
+  return auth.cargarPerfil().pipe(
+    map(() => true),
+    catchError((error: unknown) => {
+      if (error instanceof HttpErrorResponse && error.status === 401) {
+        auth.limpiarSesion();
+      }
+      return of(router.createUrlTree(['/login']));
+    }),
+  );
+};
+
+export const adminGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+
+  return auth.cargarPerfil().pipe(
+    map((perfil) =>
+      perfil.rol === 'administrador' || perfil.rol === 'superadministrador'
+        ? true
+        : router.createUrlTree(['/vinculacion']),
+    ),
+    catchError((error: unknown) => {
+      if (error instanceof HttpErrorResponse && error.status === 401) {
+        auth.limpiarSesion();
+      }
+      return of(router.createUrlTree(['/login']));
+    }),
+  );
+};
+
+export const tutorGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+
+  return auth.cargarPerfil().pipe(
+    map((perfil) => perfil.rol === 'tutor' ? true : router.createUrlTree(['/admin'])),
+    catchError((error: unknown) => {
+      if (error instanceof HttpErrorResponse && error.status === 401) auth.limpiarSesion();
+      return of(router.createUrlTree(['/login']));
+    }),
+  );
+};
+
+/** Resuelve el destino inicial a partir del rol que confirma FastAPI. */
+export const inicioGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+
+  if (!auth.estaAutenticado()) return router.createUrlTree(['/login']);
+
+  return auth.cargarPerfil().pipe(
+    map((perfil) => router.createUrlTree([
+      perfil.rol === 'tutor' ? '/dashboard-papas' : '/admin',
+    ])),
+    catchError((error: unknown) => {
+      if (error instanceof HttpErrorResponse && error.status === 401) auth.limpiarSesion();
+      return of(router.createUrlTree(['/login']));
+    }),
+  );
+};

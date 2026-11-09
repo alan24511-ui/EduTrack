@@ -1,0 +1,20 @@
+<div class="container-fluid min-vh-100 bg-body-tertiary"><div class="row min-vh-100">
+  <app-sidebar />
+  <main class="col-12 col-md-9 col-lg-9 col-xxl-10 p-3 p-lg-4">
+    <header class="mb-4"><h1 class="h2 text-primary fw-bold mb-1">Configuración de mi cuenta</h1><p class="text-secondary mb-0">Administra tus datos personales y preferencias.</p></header>
+    @if (error()) { <div class="alert alert-danger" role="alert">{{ error() }}</div> }
+    @if (mensaje()) { <div class="alert alert-success" role="status">{{ mensaje() }}</div> }
+    <div class="row g-4"><section class="col-12 col-xl-6"><div class="card shadow-sm h-100"><div class="card-header bg-primary text-white"><h2 class="h5 mb-0">Perfil de tutor</h2></div><div class="card-body">
+      <form class="vstack gap-3" (ngSubmit)="guardarPerfil()"><div><label for="perfil-nombre" class="form-label">Nombre</label><input id="perfil-nombre" class="form-control" name="nombre" [(ngModel)]="nombre" required minlength="2" maxlength="120"></div>
+        <div><label for="perfil-telefono" class="form-label">Teléfono</label><input id="perfil-telefono" class="form-control" name="telefono" [(ngModel)]="telefono" maxlength="30" type="tel"></div>
+        <div><span class="form-label d-block">Correo de la cuenta</span><span>{{ auth.tutor()?.correo || '—' }}</span></div>
+        <button class="btn btn-primary align-self-start" type="submit" [disabled]="guardando()">{{ guardando() ? 'Guardando…' : 'Guardar perfil' }}</button>
+      </form>
+    </div></div></section>
+    <div class="col-12 col-xl-6"><section class="card shadow-sm mb-4"><div class="card-header bg-primary text-white"><h2 class="h5 mb-0">Notificaciones</h2></div><div class="card-body"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" role="switch" id="notif-toggle" [checked]="notificacionesHabilitadas" (change)="cambiarNotificaciones($event)"><label class="form-check-label" for="notif-toggle">Notificaciones habilitadas</label></div><p class="form-text mb-0">Preferencia guardada en tu cuenta.</p></div></section>
+      <section class="card shadow-sm"><div class="card-header bg-primary text-white"><h2 class="h5 mb-0">Seguridad</h2></div><div class="card-body"><form class="vstack gap-3" (ngSubmit)="guardarPassword()"><div><label for="new-password" class="form-label">Nueva contraseña</label><input id="new-password" class="form-control" name="nuevaPassword" [(ngModel)]="nuevaPassword" type="password" minlength="8" maxlength="72" required autocomplete="new-password"></div><button class="btn btn-outline-primary align-self-start" type="submit">Actualizar contraseña</button></form>
+        <hr><button class="btn btn-outline-secondary" type="button" (click)="cerrarSesion()">Cerrar sesión</button>
+      </div></section>
+    </div></div>
+  </main>
+</div></div>

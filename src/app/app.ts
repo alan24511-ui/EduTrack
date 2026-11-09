@@ -1,15 +1,9 @@
-import { Component, inject } from '@angular/core';
-import { Router, RouterLink, RouterOutlet } from '@angular/router';
+import { Component } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink],
+  imports: [RouterOutlet],
   templateUrl: './app.html',
 })
-export class App {
-  private router = inject(Router);
-
-  get sinBarra() {
-    return ['/login', '/dashboard'].some(r => this.router.url.startsWith(r));
-  }
-}
+export class App {}
