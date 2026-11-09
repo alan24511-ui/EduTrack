@@ -102,7 +102,7 @@ def registrar_tutor(datos: RegistroTutorEntrada):
 
 @router.post("/verify-otp", summary="Verificar el código OTP y registrar al tutor")
 def verificar_otp(datos: VerificacionOTPEntrada):
-    resultado = supabase_auth.verificar_otp(datos.correo, datos.token)
+    resultado = supabase_auth.verificar_otp(datos.correo, datos.token, tipo="signup")
     usuario = resultado.get("user") or {}
     auth_user_id = usuario.get("id")
     if not auth_user_id:

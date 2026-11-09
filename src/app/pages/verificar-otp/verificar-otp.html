@@ -32,7 +32,7 @@
                                 <input type="text" id="token" name="token" [(ngModel)]="token"
                                     class="form-control border-primary py-3 text-center fs-4 fw-bold font-monospace"
                                     placeholder="000000" inputmode="numeric" autocomplete="one-time-code"
-                                    maxlength="10" required>
+                                    pattern="[0-9]{4,10}" maxlength="10" required>
                             </div>
 
                             <button type="submit" class="btn btn-primary w-100 py-3 fw-semibold mt-1" [disabled]="cargando()">
