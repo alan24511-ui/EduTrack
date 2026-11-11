@@ -15,6 +15,7 @@ from app.routes import dashboard as rutas_dashboard
 from app.routes import rfid as rutas_rfid
 from app.routes import configuracion as rutas_configuracion
 from app.routes import horarios as rutas_horarios
+from app.routes import notificaciones as rutas_notificaciones
 
 app = FastAPI(
     title="EduTrack API",
@@ -40,6 +41,7 @@ app.include_router(rutas_dashboard.router_tutores)
 app.include_router(rutas_rfid.router)
 app.include_router(rutas_configuracion.router)
 app.include_router(rutas_horarios.router)
+app.include_router(rutas_notificaciones.router)
 
 
 @app.get("/health", tags=["Estado"])

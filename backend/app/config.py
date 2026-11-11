@@ -25,6 +25,13 @@ class Settings(BaseSettings):
     supabase_anon_key: str = ""
     rfid_ingest_token: str = ""
 
+    # --- Servicios opcionales ---
+    firebase_project_id: str = ""
+    firebase_client_email: str = ""
+    firebase_private_key: str = ""
+    resend_api_key: str = ""
+    email_from: str = ""
+
     # --- Vinculación ---
     # Minutos que un código de vinculación permanece válido desde su creación.
     vinculacion_codigo_expiracion_minutos: int = 15
