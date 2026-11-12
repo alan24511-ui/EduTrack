@@ -1,94 +1,84 @@
-"""Puente USB serie -> HTTP FastAPI. No se conecta a PostgreSQL/Supabase."""
+"""Lector local EduTrack: RC522 por SPI, cola SQLite y sincronización HTTP."""
+
+from __future__ import annotations
 
 import argparse
 import logging
 import os
+import signal
 import time
+from datetime import datetime, timezone
 
 import requests
-import serial
-from serial.tools import list_ports
 
-from protocol import parse_uid_line
+from queue_store import ReadingQueue
+from rfid_reader import RC522Reader
+from synchronizer import Synchronizer
 
 LOG = logging.getLogger("edutrack-reader")
+DETENER = False
 
 
-def elegir_puerto(configurado: str | None) -> str:
-    if configurado:
-        return configurado
-    puertos = [p.device for p in list_ports.comports()]
-    if len(puertos) != 1:
-        raise RuntimeError("Configura --port; no se pudo elegir un puerto USB sin ambigüedad.")
-    return puertos[0]
+def _solicitar_detencion(_signal_number, _frame):
+    global DETENER
+    DETENER = True
 
 
-def ejecutar(puerto: str, velocidad: int, endpoint: str, cooldown: float, codigo_dispositivo: str, token: str) -> None:
-    ultimo_uid = None
-    ultima_envio = 0.0
-    ultimo_heartbeat = 0.0
-    while True:
-        try:
-            LOG.info("Conectando con Arduino en %s", puerto)
-            with serial.Serial(puerto, velocidad, timeout=1) as dispositivo:
-                time.sleep(2)  # El Uno reinicia al abrir el puerto serie.
-                while True:
-                    if time.monotonic() - ultimo_heartbeat >= 30:
-                        ultimo_heartbeat = time.monotonic()
-                        try:
-                            hb = requests.post(
-                                endpoint.rsplit("/", 1)[0] + "/heartbeat",
-                                params={"codigo_dispositivo": codigo_dispositivo},
-                                headers={"X-Reader-Token": token},
-                                timeout=5,
-                            )
-                            hb.raise_for_status()
-                        except requests.RequestException as error:
-                            LOG.warning("No se pudo actualizar el contacto del lector (%s)", type(error).__name__)
-                    linea = dispositivo.readline().decode("ascii", errors="ignore")
-                    uid = parse_uid_line(linea)
-                    if uid is None:
-                        if linea.strip():
-                            LOG.warning("Línea serial inválida descartada")
-                        continue
-                    ahora = time.monotonic()
-                    if uid == ultimo_uid and ahora - ultima_envio < cooldown:
-                        continue
-                    try:
-                        respuesta = requests.post(
-                            endpoint,
-                            json={"uid": uid, "codigo_dispositivo": codigo_dispositivo},
-                            headers={"X-Reader-Token": token},
-                            timeout=5,
-                        )
-                        respuesta.raise_for_status()
-                        LOG.info("Lectura procesada por API (HTTP %s)", respuesta.status_code)
-                    except requests.RequestException as error:
-                        # No registrar URL, payload ni encabezados; no contienen credenciales.
-                        LOG.error("No se pudo comunicar con FastAPI (%s)", type(error).__name__)
-                        continue
-                    ultimo_uid, ultima_envio = uid, ahora
-        except (serial.SerialException, OSError) as error:
-            LOG.warning("Arduino desconectado (%s); reintento en 3 s", type(error).__name__)
-            time.sleep(3)
+def ejecutar(endpoint: str, device_code: str, token: str, queue_path: str,
+             sync_interval: float, batch_size: int) -> None:
+    queue = ReadingQueue(queue_path)
+    synchronizer = Synchronizer(queue, endpoint, token, batch_size)
+    reader = RC522Reader()
+    next_sync = 0.0
+    next_heartbeat = 0.0
+    LOG.info("RC522 listo por SPI; cola persistente: %s", queue_path)
+    try:
+        while not DETENER:
+            now = time.monotonic()
+            uid = reader.poll_uid()
+            if uid:
+                row_id = queue.enqueue(uid, device_code, datetime.now(timezone.utc).isoformat())
+                LOG.info("Lectura %d encolada; %d pendientes", row_id, queue.count())
+
+            now = time.monotonic()
+            if now >= next_sync:
+                synchronizer.synchronize()
+                next_sync = now + sync_interval
+            if now >= next_heartbeat:
+                try:
+                    response = requests.post(
+                        endpoint.rsplit("/", 1)[0] + "/heartbeat",
+                        params={"codigo_dispositivo": device_code},
+                        headers={"X-Reader-Token": token},
+                        timeout=5,
+                    )
+                    response.raise_for_status()
+                except requests.RequestException as error:
+                    LOG.warning("No se pudo actualizar el contacto del lector (%s)", type(error).__name__)
+                next_heartbeat = now + 30
+            time.sleep(0.05)
+    finally:
+        reader.close()
+        LOG.info("Lector detenido; %d lecturas permanecen en cola", queue.count())
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--port", default=os.getenv("EDUTRACK_SERIAL_PORT"))
-    parser.add_argument("--baud", type=int, default=int(os.getenv("EDUTRACK_SERIAL_BAUD", "115200")))
     parser.add_argument("--endpoint", default=os.getenv("EDUTRACK_RFID_ENDPOINT", "http://localhost:8000/rfid/lecturas"))
     parser.add_argument("--device-code", default=os.getenv("EDUTRACK_DEVICE_CODE"))
-    token = os.getenv("EDUTRACK_RFID_TOKEN", "")
-    parser.add_argument("--cooldown", type=float, default=2.0, help="Segundos para deduplicar UID consecutivo")
+    parser.add_argument("--queue", default=os.getenv("EDUTRACK_RFID_QUEUE", "./data/readings.sqlite3"))
+    parser.add_argument("--sync-interval", type=float, default=float(os.getenv("EDUTRACK_SYNC_INTERVAL", "10")))
+    parser.add_argument("--batch-size", type=int, default=int(os.getenv("EDUTRACK_BATCH_SIZE", "50")))
     args = parser.parse_args()
+    token = os.getenv("EDUTRACK_RFID_TOKEN", "")
     if not args.device_code or not token:
         parser.error("Configura EDUTRACK_DEVICE_CODE y EDUTRACK_RFID_TOKEN en el entorno.")
+    if args.sync_interval <= 0 or args.batch_size <= 0:
+        parser.error("--sync-interval y --batch-size deben ser mayores que cero.")
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    try:
-        ejecutar(elegir_puerto(args.port), args.baud, args.endpoint, args.cooldown, args.device_code, token)
-    except RuntimeError as error:
-        parser.error(str(error))
+    signal.signal(signal.SIGINT, _solicitar_detencion)
+    signal.signal(signal.SIGTERM, _solicitar_detencion)
+    ejecutar(args.endpoint, args.device_code, token, args.queue, args.sync_interval, args.batch_size)
 
 
 if __name__ == "__main__":

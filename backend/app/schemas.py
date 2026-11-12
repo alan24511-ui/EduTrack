@@ -13,7 +13,7 @@ class RegistroTutorEntrada(BaseModel):
 
 class VerificacionOTPEntrada(BaseModel):
     correo: EmailStr
-    token: str = Field(min_length=4, max_length=10)
+    token: str = Field(min_length=4, max_length=10, pattern=r"^[0-9]+$")
 
 
 class CorreoEntrada(BaseModel):
@@ -31,7 +31,7 @@ class RenovacionSesionEntrada(BaseModel):
 
 class RecuperacionPasswordEntrada(BaseModel):
     correo: EmailStr
-    token: str = Field(min_length=4, max_length=10)
+    token: str = Field(min_length=4, max_length=10, pattern=r"^[0-9]+$")
     nueva_password: str = Field(min_length=8, max_length=72)
 
 

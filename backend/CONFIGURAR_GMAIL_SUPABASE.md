@@ -16,8 +16,14 @@ EduTrack usa **Supabase Auth** para crear, enviar y validar los códigos OTP de 
    | Sender email | La misma dirección Gmail |
    | Sender name | `EduTrack` |
 
-3. Guarda la configuración y revisa **Authentication → Email Templates**. Las plantillas de registro y recuperación deben incluir el token OTP (`{{ .Token }}`) porque las pantallas de EduTrack piden un código; no cambies a enlaces mágicos sin adaptar el flujo.
-4. Verifica registro, reenvío de código y recuperación con una cuenta de prueba. Revisa también los logs de Auth de Supabase si un correo no llega.
+3. Guarda la configuración y abre **Authentication → Email Templates**. En cada plantilla, reemplaza el botón/enlace de confirmación por el token:
+
+   - **Confirm signup**: incluye `{{ .Token }}` en el cuerpo, por ejemplo: `Tu código de verificación de EduTrack es: {{ .Token }}`.
+   - **Reset password**: incluye `{{ .Token }}` en el cuerpo, por ejemplo: `Tu código para restablecer la contraseña es: {{ .Token }}`.
+
+   No uses `{{ .ConfirmationURL }}`, `{{ .TokenHash }}` ni enlaces mágicos en estas plantillas: la interfaz solicita el código numérico y FastAPI lo valida contra Supabase Auth. El valor `{{ .Token }}` es generado y validado por Supabase. Si Supabase conserva otros nombres/localizaciones de plantilla, configura tanto la confirmación de registro como la recuperación de contraseña.
+4. En **Authentication → URL Configuration**, configura **Site URL** con el dominio real de EduTrack y agrega los dominios de despliegue a **Redirect URLs**. Esto evita que otras funciones de Auth caigan en localhost. Este flujo OTP no depende de una URL de retorno ni pide `emailRedirectTo`; el enlace de localhost provenía de la plantilla de confirmación.
+5. Verifica registro, reenvío de código y recuperación con una cuenta de prueba. Revisa también los logs de Auth de Supabase si un correo no llega.
 
 Google requiere autenticación SMTP cifrada y documenta el puerto 587 para TLS/STARTTLS. La contraseña de aplicación requiere verificación en dos pasos y puede no estar disponible en algunas cuentas administradas. Revisa las políticas y límites vigentes de Google antes de usar Gmail para tráfico real.
 

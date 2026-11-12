@@ -1,36 +1,21 @@
 # Implementación pendiente
 
-Última auditoría: 2026-11-08. Rama `chato`; árbol inicial limpio. No se aplicaron cambios a Supabase ni se hicieron commits.
+| Área | Estado / pendiente |
+|---|---|
+| Autenticación y sesiones | Implementadas; falta validación HTTP contra proyecto Supabase de la instalación. |
+| Estudiantes, tutores, tarjetas, horarios, historial y dashboard | Implementados según el esquema compartido; falta validación contra PostgreSQL real y sus políticas RLS/checks. |
+| Lector RFID | Servicio adaptado a Raspberry Pi Zero 2 W + RC522 por SPI, SQLite persistente y envío en ciclos al contrato actual. Pendiente prueba física en la Pi y revisión de versión/compatibilidad de `pi-rc522` en la imagen objetivo de Raspberry Pi OS. |
+| Ingesta/reintentos | Encolado local y reintento implementados. El backend solo acepta un evento por solicitud, no ofrece clave de idempotencia ni hora de captura; no puede garantizarse exactamente una vez ante una respuesta perdida. Para esa garantía se necesita ampliar API/base de datos de forma coordinada. |
+| Reglas de asistencia | Primera lectura del día = entrada, segunda = salida. Confirmar reglas del plantel para retardos, calendario y ausencias. |
+| Seguridad / despliegue | Configurar secretos localmente; revisar CORS, TLS, permisos de la cola SQLite, constraints y RLS antes de producción. |
 
-| Etapa / módulo | Estado | Trabajo realizado / pendiente |
-|---|---|---|
-| 1. Autenticación y sesiones | PARCIAL | Auth existente conservado; refresh, OTP resend/recovery, restablecimiento, UI y renovación ante 401. Roles `administrador`/`superadministrador` se leen de `Administradores.Rol`; falta validación HTTP real. |
-| 2. Gestión de estudiantes | PARCIAL | CRUD, filtros y tutores vinculados conectados según esquema recibido; falta prueba contra PostgreSQL real y revisión RLS. |
-| 3. Tarjetas RFID | PARCIAL | Registro, búsqueda UID, vigencia y reemplazo implementados. No hay columna activa, por lo que falta activación/desactivación independiente y captura de UID desde la UI. |
-| 4. Vinculación de tutores | PARCIAL | Flujo backend y frontend existente; usa hash, expiración y transacción. Falta verificar compatibilidad con esquema real, carreras/constraints y ejecutar integración con base configurada. |
-| 5. Arduino + RC522 | PARCIAL | Firmware SPI y protocolo de línea creados; no probado con dispositivo físico. |
-| 6. Servicio Python | PARCIAL | Cliente serial, token compartido, validación, deduplicación y reconexión. Endpoint FastAPI creado; falta prueba HTTP y hardware. |
-| 7. Asistencias | PARCIAL | Primera lectura diaria = entrada, segunda = salida y las posteriores no alteran la fila única diaria. Falta validar reglas escolares y probar base real. |
-| 8. Historial | PARCIAL | Filtros de fecha/estudiante/grupo y autorización de tutor implementados; falta integración/RLS real. |
-| 9. Dashboard | PARCIAL | Métricas/tablas/dispositivos usan datos reales; inasistencias quedan `null` sin calendario escolar. Falta prueba integrada. |
-| 10. Seguridad y pruebas finales | PARCIAL | Guards Angular y dependencias admin FastAPI existentes; se dejó de usar `service_role` como fallback para llamadas Auth. Sin schema/RLS ni configuración no se puede auditar autorización real. Pruebas se reportan abajo. |
-| Documentación | PARCIAL | README, arquitectura, hardware y este registro actualizados; faltan secretos/configuración local, checks completos y reglas del plantel. |
+## Puesta en marcha RFID
 
-## Requisitos manuales para desbloquear
+Seguir [HARDWARE.md](HARDWARE.md) para cableado SPI, habilitación de SPI, dependencias y operación. Confirmar `EDUTRACK_DEVICE_CODE` activo y coincidencia del token `EDUTRACK_RFID_TOKEN` con `RFID_INGEST_TOKEN`. La Raspberry no necesita Arduino, puerto serial ni `pyserial`.
 
-1. Configurar PostgreSQL, Supabase Auth/OTP, `SUPABASE_URL`, `SUPABASE_ANON_KEY` y un `RFID_INGEST_TOKEN` aleatorio en `backend/.env`.
-2. Confirmar un dispositivo activo en `Dispositivos`; configurar `EDUTRACK_DEVICE_CODE` y `EDUTRACK_RFID_TOKEN` en el servicio local con el mismo token.
-3. Revisar expresiones reales de `ck_admin_rol`, checks de asistencia/vigencia y políticas RLS; el inventario recibido solo listó sus nombres.
-4. Confirmar reglas de entrada/salida, retardo, calendario y ausencias. La regla actual usa primera lectura para entrada y segunda para salida.
-5. Para verificación física, disponer de Arduino Uno, RC522, adaptación de nivel lógico 5V→3.3V y tarjeta compatible.
+## Aspectos que no se han validado
 
-## Evidencia de pruebas de esta revisión
-
-- `npm run build`: compilación Angular exitosa con dos warnings NG8113 de imports sin uso en `Admin` y `App`.
-- `npm test -- --watch=false`: 11 archivos y 16 pruebas Angular pasaron.
-- `python -m py_compile app/*.py app/routes/*.py tests/*.py`: sintaxis backend válida. `PYTHONPATH=. python tests/test_attendance_rules.py`: 3 pruebas pasaron.
-- `python -m unittest` en `reader_service`: 2 pruebas de protocolo serial simulado pasaron.
-- `git diff --check`: sin errores de whitespace.
-- Suite backend HTTP/roles: no ejecutable en el Python activo por `ModuleNotFoundError: fastapi`; el intento de inspección de PostgreSQL falló por `ModuleNotFoundError: psycopg`. No se instalaron dependencias ni se conectó a una base.
-- No se probaron llamadas HTTP de Auth: no hay proyecto Supabase verificable disponible en esta auditoría.
-- No se probó hardware físico. La simulación de líneas seriales no se presenta como prueba del lector.
+- Lectura real RC522 con los pines GPIO y la revisión exacta de Raspberry Pi OS elegida.
+- Envío integrado de lecturas a un backend y una base Supabase reales.
+- Desempeño/resistencia de la cola con la carga y retención de registros de producción.
+- Restricciones, checks y políticas RLS completas del esquema remoto.

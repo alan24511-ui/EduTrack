@@ -6,16 +6,17 @@ no se modifica la fila después de tener ambas horas (UNIQUE estudiante/fecha).
 
 import secrets
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Header, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Header, HTTPException
 from psycopg import Error as PsycopgError
 
 from app.config import obtener_settings
 from app.database import obtener_conexion
 from app.asistencia_reglas import siguiente_evento
 from app.schemas import LecturaRFIDEntrada
+from app.firebase_service import notificar_tutores_estudiante
 
 router = APIRouter(prefix="/rfid", tags=["Lector RFID"])
 ZONA = ZoneInfo("America/Mexico_City")
@@ -54,7 +55,7 @@ def _registrar_acceso(cur, ahora, id_dispositivo, id_estudiante, id_tarjeta, eve
 
 
 @router.post("/lecturas")
-def procesar_lectura(datos: LecturaRFIDEntrada, x_reader_token: str = Header(default="")):
+def procesar_lectura(datos: LecturaRFIDEntrada, background_tasks: BackgroundTasks, x_reader_token: str = Header(default="")):
     _validar_lector(x_reader_token)
     uid = datos.uid.upper()
     ahora = datetime.now(ZONA)
@@ -77,14 +78,14 @@ def procesar_lectura(datos: LecturaRFIDEntrada, x_reader_token: str = Header(def
             id_dispositivo = dispositivo[0]
             cur.execute('UPDATE "Dispositivos" SET "Ultimo_Contacto"=%s WHERE "Id_Dispositivo"=%s', (ahora, id_dispositivo))
 
-            cur.execute('SELECT c."id_Tarjeta", c."Id_Estudiante", c."Vigencia_inicio", c."Vigencia_termino", e."Nombre", e."Matricula" FROM "Credenciales_rfid" c LEFT JOIN "Estudiantes" e ON e."Id_Estudiante"=c."Id_Estudiante" WHERE upper(c."UID_tarjeta")=%s', (uid,))
+            cur.execute('SELECT c."id_Tarjeta", c."Id_Estudiante", c."Vigencia_inicio", c."Vigencia_termino", e."Nombre", e."Matricula", e."Grupo" FROM "Credenciales_rfid" c LEFT JOIN "Estudiantes" e ON e."Id_Estudiante"=c."Id_Estudiante" WHERE upper(c."UID_tarjeta")=%s', (uid,))
             tarjeta = cur.fetchone()
             if not tarjeta:
                 _registrar_acceso(cur, ahora, id_dispositivo, None, None, "lectura", "tarjeta_desconocida")
                 _lecturas_recientes[clave] = tiempo_monotono
                 return {"resultado": "tarjeta_desconocida", "mensaje": "La tarjeta no está registrada."}
 
-            id_tarjeta, id_estudiante, inicio, termino, nombre, matricula = tarjeta
+            id_tarjeta, id_estudiante, inicio, termino, nombre, matricula, grupo = tarjeta
             if inicio and inicio > ahora.date() or termino and termino < ahora.date():
                 _registrar_acceso(cur, ahora, id_dispositivo, id_estudiante, id_tarjeta, "lectura", "tarjeta_fuera_de_vigencia")
                 _lecturas_recientes[clave] = tiempo_monotono
@@ -132,6 +133,29 @@ def procesar_lectura(datos: LecturaRFIDEntrada, x_reader_token: str = Header(def
 
             _registrar_acceso(cur, ahora, id_dispositivo, id_estudiante, id_tarjeta, evento, resultado)
             _lecturas_recientes[clave] = tiempo_monotono
+            if evento == "entrada" and resultado == "registrada":
+                dias = ("lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo")
+                cur.execute(
+                    'SELECT "Hora_de_entrada", "Tolerancia" FROM "Horarios" '
+                    'WHERE translate(lower("Dia_semana"), \'áéíóú\', \'aeiou\')=%s '
+                    'AND lower("Grupo")=lower(%s) LIMIT 1',
+                    (dias[ahora.weekday()], grupo),
+                )
+                horario = cur.fetchone()
+                tardia = bool(horario and ahora.time().replace(tzinfo=None) > (
+                    datetime.combine(ahora.date(), horario[0]) + timedelta(minutes=int(horario[1] or 0))
+                ).time())
+                categoria = "entrada_con_retardo" if tardia else "entrada_registrada"
+                titulo = "Entrada con retardo" if tardia else "Entrada registrada"
+                texto = f"Se registró la entrada de {nombre} a las {ahora.strftime('%H:%M')}."
+                background_tasks.add_task(
+                    notificar_tutores_estudiante,
+                    id_estudiante,
+                    categoria,
+                    titulo,
+                    texto,
+                    f"{categoria}:{id_estudiante}:{ahora.date().isoformat()}",
+                )
             return {"resultado": resultado, "evento": evento, "estudiante": nombre, "matricula": matricula, "fechaHora": ahora.isoformat()}
     except PsycopgError as error:
         # Retire cache entry so a failed database transaction can be retried.

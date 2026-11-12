@@ -51,9 +51,20 @@ __pycache__/
 
 # Entorno virtual de FastAPI
 backend/.venv/
+reader_service/.venv/
+reader_service/data/
+*.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
 
 # Variables de entorno y secretos
+/.env
+/.env.*
+!/.env.example
 backend/.env
+backend/.env.*
+!.env.example
+!backend/.env.example
 
 # Archivos de pruebas y herramientas
 .pytest_cache/
