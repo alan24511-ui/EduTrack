@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     firebase_project_id: str = ""
     firebase_client_email: str = ""
     firebase_private_key: str = ""
+    firebase_service_account_path: str = "~/.config/edutrack/firebase-service-account.json"
     resend_api_key: str = ""
     email_from: str = ""
 
