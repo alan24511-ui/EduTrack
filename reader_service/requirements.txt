@@ -1,2 +1,2 @@
-pi-rc522==2.3.0
+pyserial>=3.5,<4.0
 requests==2.34.2

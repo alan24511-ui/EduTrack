@@ -1,6 +1,6 @@
 # Servicios cloud y despliegue
 
-Servicios de EduTrack: Supabase (PostgreSQL y Auth), Render (FastAPI), Vercel (Angular), Resend (correo de aplicación) y Firebase Cloud Messaging (push). La Raspberry Pi conserva la cola durable SQLite; no se necesita almacenamiento cloud para esa cola.
+Servicios de EduTrack: Supabase (PostgreSQL y Auth), Render (FastAPI), Vercel (Angular), Resend (correo de aplicación) y Firebase Cloud Messaging (push). El equipo conectado al Arduino conserva la cola durable SQLite; no se necesita almacenamiento cloud para esa cola.
 
 La integración FCM queda inactiva hasta que se configuren credenciales. FastAPI inicia sin Firebase; los endpoints push solo se activan para tutores autenticados y dispositivos registrados. No se envían notificaciones de prueba automáticamente.
 
@@ -13,7 +13,7 @@ Completa `backend/.env.example` para desarrollo. No reemplaces ni compartas `bac
 | `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_NAME`, `DATABASE_USER`, `DATABASE_PASSWORD` | Render | PostgreSQL de Supabase. |
 | `SUPABASE_URL`, `SUPABASE_ANON_KEY` | Render | Validación de sesión con Supabase Auth. No requiere `service_role`. |
 | `CORS_ORIGINS` | Render | Dominios del frontend permitidos. |
-| `RFID_INGEST_TOKEN` | Render y Raspberry Pi | Autentica la ingesta del lector existente. |
+| `RFID_INGEST_TOKEN` | Render y equipo receptor Python | Autentica la ingesta del lector existente. |
 | `RESEND_API_KEY`, `EMAIL_FROM` | Render | Correo iniciado por EduTrack. |
 | `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` | Render/backend local | Cuenta de servicio privada para Firebase Admin. La clave admite saltos de línea o `\\n` literales. |
 | `EDUTRACK_API_URL` | Vercel, build | URL pública de FastAPI. |
