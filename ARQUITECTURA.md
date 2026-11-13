@@ -3,26 +3,27 @@
 ## Diseño
 
 ```text
-RC522 --SPI--> Raspberry Pi Zero 2 W --Python--> SQLite local (pendientes)
-                                                 |
-                                                 | POST individual por ciclo
-                                                 v
-Angular standalone <--> FastAPI <--> PostgreSQL / Supabase
+Arduino + RC522 --USB Serial--> Python + SQLite (cola local)
+                                      |
+                                      | POST /rfid/lecturas
+                                      v
+Angular <--> FastAPI <--> PostgreSQL / Supabase
 ```
 
-La aplicación web es Angular standalone con Bootstrap. FastAPI gestiona autenticación apoyada en Supabase Auth y consulta PostgreSQL con `psycopg`. En el dispositivo, `rfid_reader.py` lee el RC522 por SPI, `queue_store.py` mantiene una cola SQLite durable y `synchronizer.py` envía las lecturas pendientes al endpoint existente `POST /rfid/lecturas`. El servicio también actualiza `POST /rfid/heartbeat`.
+Arduino se limita a leer tarjetas RC522 y enviar el UID en texto serial (`UID: A1B2C3D4`, 9600 baudios). El servicio local de Python interpreta ese protocolo, elimina repeticiones breves, guarda lecturas en SQLite y las sincroniza por ciclos. FastAPI valida el UID, verifica el dispositivo y la tarjeta, registra asistencia y se conecta a PostgreSQL/Supabase. Angular consume la API sin cambios a su navegación, vistas o roles.
 
-El cuerpo de ingesta sigue siendo `uid` y `codigo_dispositivo`, autenticado por `X-Reader-Token`. No se cambió el frontend ni el esquema de base de datos. El firmware Arduino, el protocolo serial y `pyserial` ya no forman parte del flujo.
+## Componentes
 
-## Procesamiento RFID
+- `reader_service/arduino/lector_rfid.ino`: firmware para RC522 mediante la biblioteca MFRC522.
+- `reader_service/reader_service.py` y `serial_reader.py`: recepción USB serial y coordinación del envío.
+- `reader_service/queue_store.py`: cola local durable SQLite.
+- `reader_service/synchronizer.py`: envío del lote al endpoint actual, una lectura por solicitud.
+- `backend/app/routes/rfid.py`: endpoints autenticados de lectura y heartbeat.
 
-La Pi conserva los UID como hexadecimal en mayúsculas, con ceros iniciales y longitud de 4, 7 o 10 bytes. El lector solo encola una vez por colocación de tarjeta; se rearma tras detectar que la tarjeta dejó el campo. El proceso sincroniza hasta un lote configurable cada intervalo configurable. Como FastAPI solo expone ingesta individual, un ciclo de lote realiza varios `POST` uno por uno, sin agregar rutas ni cambiar el contrato.
+El endpoint acepta `uid` y `codigo_dispositivo`, usa `X-Reader-Token` y valida tarjetas registradas, vigencia y estado del lector. La hora del registro la asigna FastAPI con `America/Mexico_City`. No se modificó el esquema de base de datos. Arduino no realiza llamadas HTTP ni se conecta a Supabase.
 
-La cola no elimina una lectura hasta recibir HTTP exitoso; los errores dejan registros para el siguiente ciclo. Un UID y código de dispositivo se conservan localmente junto a la hora de captura; esta última no puede viajar al servidor porque el contrato actual no la admite. Ante pérdida de una respuesta después de que el backend haya confirmado la escritura, un reintento no puede garantizar exactamente una vez: el endpoint carece de una clave de idempotencia. El backend sí aplica una ventana de deduplicación de cuatro segundos. Véase [HARDWARE.md](HARDWARE.md).
+## Reintentos y límites
 
-## Límites pendientes
+Python conserva cada fila hasta una respuesta HTTP exitosa. Si falla el envío, pausa el lote y reintenta en el siguiente ciclo. El backend deduplica lecturas repetidas de una tarjeta/dispositivo durante cuatro segundos y el receptor filtra duplicados inmediatos durante dos segundos por defecto. El contrato de la API no admite un identificador idempotente; una respuesta perdida después de un commit puede dar lugar a un reintento ambiguo. Tampoco se envía hora de captura local, así que una lectura encolada offline se registra con la hora de recepción del backend.
 
-- Las consultas SQL y las reglas RLS/checks deben contrastarse con el esquema real de Supabase antes de producción.
-- Las reglas actuales de asistencia son primera lectura diaria = entrada, segunda = salida; posteriores no cambian la fila diaria.
-- La integración nueva SPI/RC522 debe validarse en la Raspberry Pi física; la ejecución en otro equipo no prueba el cableado ni el lector.
-- El timestamp local no se utiliza para retrofechar asistencia; el servidor registra la hora de llegada.
+La integración de hardware requiere prueba física con Arduino, RC522 y puerto USB de la computadora. Consulta [HARDWARE.md](HARDWARE.md) para cableado, instalación, configuración y verificación extremo a extremo.
