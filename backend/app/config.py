@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     supabase_url: str = ""
     supabase_anon_key: str = ""
     rfid_ingest_token: str = ""
+    rfid_serial_baud: int = 9600
+    rfid_serial_port: str = ""
 
     # --- Servicios opcionales ---
     firebase_project_id: str = ""

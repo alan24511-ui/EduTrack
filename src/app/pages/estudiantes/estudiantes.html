@@ -36,6 +36,17 @@
 
                 @if (error()) { <div class="alert alert-danger" role="alert">{{ error() }}</div> }
                 @if (aviso()) { <div class="alert alert-success" role="status">{{ aviso() }}</div> }
+                <div class="d-flex align-items-center gap-2 small mb-3" role="status">
+                    <span class="rounded-circle" [class.bg-success]="lector()?.conectado" [class.bg-danger]="!lector()?.conectado" style="width:.65rem;height:.65rem" aria-hidden="true"></span>
+                    <span>{{ lector()?.conectado ? 'Lector RFID conectado' : 'Lector RFID desconectado' }}</span>
+                    @if (!lector()?.conectado) { <button type="button" class="btn btn-link btn-sm p-0" (click)="consultarLector()">Reintentar</button> }
+                </div>
+                @if (alumnoNuevo()) {
+                    <div class="alert alert-info d-flex flex-wrap align-items-center justify-content-between gap-2" role="status">
+                        <span>¿Deseas asociar una tarjeta ahora a {{ alumnoNuevo()?.nombre }}?</span>
+                        <div class="d-flex gap-2"><button type="button" class="btn btn-primary btn-sm" (click)="asociarAhora(alumnoNuevo()!)">Asociar tarjeta</button><button type="button" class="btn btn-outline-secondary btn-sm" (click)="posponerAsociacion()">Ahora no</button></div>
+                    </div>
+                }
                 @if (formularioVisible()) {
                     <section class="card rounded-4 shadow-sm mb-4"><div class="card-body p-4">
                         <h3 class="fs-5 fw-bold text-primary">{{ editando() === null ? 'Registrar alumno' : 'Editar alumno' }}</h3>
@@ -56,7 +67,7 @@
                         <table class="table table-hover align-middle text-nowrap mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th class="text-primary fs-5 fw-bold px-4 py-3">Matricula</th>
+                                    <th class="text-primary fs-5 fw-bold px-4 py-3">Matrícula</th>
                                     <th class="text-primary fs-5 fw-bold px-4 py-3">Nombre</th>
                                     <th class="text-primary fs-5 fw-bold px-4 py-3">Grupo</th>
                                     <th class="text-primary fs-5 fw-bold px-4 py-3">Estado</th>
@@ -66,8 +77,8 @@
                             <tbody id="tabla-estudiantes">
                                 @for (alumno of visibles; track alumno.id) {
                                     <tr>
-                                        <td class="px-4">{{ alumno.matricula }}</td><td>{{ alumno.nombre }}</td><td>{{ alumno.grupo }}</td><td>—</td>
-                                        <td><div class="d-flex gap-2"><button type="button" class="btn btn-sm btn-outline-primary" (click)="editar(alumno)">Editar</button><button type="button" class="btn btn-sm btn-outline-secondary" (click)="alternarTutores(alumno.id)">Tutores ({{ alumno.tutores?.length ?? 0 }})</button></div></td>
+                                    <td class="px-4">{{ alumno.matricula }}</td><td>{{ alumno.nombre }}</td><td>{{ alumno.grupo }}</td><td><span class="badge" [class.text-bg-success]="alumno.tieneTarjeta" [class.text-bg-secondary]="!alumno.tieneTarjeta">{{ alumno.tieneTarjeta ? 'Tarjeta asociada' : 'Sin tarjeta' }}</span></td>
+                                        <td><div class="d-flex gap-2"><button type="button" class="btn btn-sm btn-outline-primary" [disabled]="alumno.tieneTarjeta" (click)="abrirAsociacion(alumno)">Asociar tarjeta</button><button type="button" class="btn btn-sm btn-outline-primary" (click)="editar(alumno)">Editar</button><button type="button" class="btn btn-sm btn-outline-secondary" (click)="alternarTutores(alumno.id)">Tutores ({{ alumno.tutores?.length ?? 0 }})</button></div></td>
                                     </tr>
                                     @if (tutoresAbiertos() === alumno.id) { <tr><td colspan="5" class="px-4 py-2"><strong>Tutores vinculados:</strong> {{ nombresTutores(alumno) }}</td></tr> }
                                 } @empty { <tr><td colspan="5" class="text-center py-4">No hay estudiantes para mostrar.</td></tr> }
@@ -81,3 +92,20 @@
         </div>
     </div>
 </div>
+
+@if (alumnoRFID(); as alumno) {
+    <div class="modal d-block" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="modal-rfid-titulo" style="background:rgba(0,0,0,.5)">
+        <div class="modal-dialog modal-dialog-centered"><div class="modal-content rounded-4">
+            <div class="modal-header"><h2 class="modal-title fs-5" id="modal-rfid-titulo">Asociar tarjeta RFID</h2><button type="button" class="btn-close" aria-label="Cerrar" (click)="cerrarAsociacion()"></button></div>
+            <div class="modal-body">
+                <p class="mb-3"><strong>Alumno:</strong> {{ alumno.nombre }} ({{ alumno.matricula }})</p>
+                <div class="d-flex align-items-center gap-2 mb-3" role="status"><span class="rounded-circle" [class.bg-success]="lector()?.conectado" [class.bg-danger]="!lector()?.conectado" style="width:.7rem;height:.7rem"></span><span>{{ lector()?.conectado ? 'Lector conectado' : 'Lector desconectado' }}{{ lector()?.puerto ? ' · ' + lector()?.puerto : '' }}</span></div>
+                @if (estadoRFID() === 'comprobando') { <div class="d-flex align-items-center gap-2" role="status"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span>Comprobando lector…</div> }
+                @if (estadoRFID() === 'leyendo') { <div class="alert alert-primary mb-0" role="status"><span class="spinner-grow spinner-grow-sm me-2" aria-hidden="true"></span>Acerca la credencial al lector RC522.</div> }
+                @if (estadoRFID() === 'exito') { <div class="alert alert-success mb-0" role="status">{{ resultadoRFID() }}</div> }
+                @if (estadoRFID() === 'error') { <div class="alert alert-danger" role="alert">{{ resultadoRFID() }}</div><button type="button" class="btn btn-outline-primary" (click)="iniciarLectura()">Reintentar</button> }
+            </div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" (click)="cerrarAsociacion()">{{ estadoRFID() === 'leyendo' ? 'Cancelar lectura' : 'Cerrar' }}</button></div>
+        </div></div>
+    </div>
+}

@@ -1,5 +1,6 @@
 
 from fastapi import FastAPI
+from contextlib import asynccontextmanager
 from fastapi import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from psycopg import Error as PsycopgError
@@ -16,11 +17,22 @@ from app.routes import rfid as rutas_rfid
 from app.routes import configuracion as rutas_configuracion
 from app.routes import horarios as rutas_horarios
 from app.routes import notificaciones as rutas_notificaciones
+from app.rfid_reader import configurar_lector
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    import os
+    lector = configurar_lector(int(os.getenv("RFID_SERIAL_BAUD", "9600")), os.getenv("RFID_SERIAL_PORT", ""))
+    lector.start()
+    yield
+    lector.stop()
 
 app = FastAPI(
     title="EduTrack API",
     description="API para el sistema escolar de control de acceso y asistencia.",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(

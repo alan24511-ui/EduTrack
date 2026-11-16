@@ -46,7 +46,7 @@ def listar_estudiantes(
     where = " WHERE " + " AND ".join(filtros) if filtros else ""
     try:
         with obtener_conexion() as conn, conn.cursor() as cur:
-            cur.execute('SELECT e."Id_Estudiante", e."Nombre", e."Matricula", e."Grupo", e."Correo_Institucional" FROM "Estudiantes" e' + where + ' ORDER BY e."Nombre"', parametros)
+            cur.execute('SELECT e."Id_Estudiante", e."Nombre", e."Matricula", e."Grupo", e."Correo_Institucional", EXISTS (SELECT 1 FROM "Credenciales_rfid" c WHERE c."Id_Estudiante"=e."Id_Estudiante") FROM "Estudiantes" e' + where + ' ORDER BY EXISTS (SELECT 1 FROM "Credenciales_rfid" c WHERE c."Id_Estudiante"=e."Id_Estudiante"), e."Nombre"', parametros)
             filas = cur.fetchall()
             ids = [row[0] for row in filas]
             tutores: dict[int, list[dict]] = {id_est: [] for id_est in ids}
@@ -54,7 +54,7 @@ def listar_estudiantes(
                 cur.execute('SELECT et."Id_Estudiante", t."Id_Tutor", t."Nombre", et."Parentesco", et."Autorizado" FROM "Estudiante_Tutor" et JOIN "Tutores" t ON t."Id_Tutor"=et."Id_Tutor" WHERE et."Id_Estudiante" = ANY(%s)', (ids,))
                 for id_est, id_tutor, nombre, parentesco, autorizado in cur.fetchall():
                     tutores[id_est].append({"idTutor": id_tutor, "nombre": nombre, "parentesco": parentesco, "autorizado": autorizado})
-        return [{**_estudiante(f), "tutores": tutores[f[0]]} for f in filas]
+        return [{**_estudiante(f), "tieneTarjeta": bool(f[5]), "tutores": tutores[f[0]]} for f in filas]
     except PsycopgError as error:
         _traducir_error_db(error)
 

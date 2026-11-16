@@ -9,6 +9,7 @@ export interface Estudiante {
   matricula: string;
   grupo: string;
   correoInstitucional: string | null;
+  tieneTarjeta?: boolean;
   tutores?: { idTutor: number; nombre: string; parentesco: string | null; autorizado: boolean }[];
 }
 
@@ -88,6 +89,11 @@ export class EduTrackDataService {
   crearTarjeta(data: { uid: string; id_estudiante: number; propietario: string | null; vigencia_inicio: string | null; vigencia_termino: string | null }) {
     return this.http.post<Tarjeta>(`${this.base}/tarjetas`, data);
   }
+  estadoLector() { return this.http.get<{ conectado: boolean; puerto: string | null; lectorListo: boolean; capturando: boolean; error: string | null }>(`${this.base}/rfid/reader/status`); }
+  asociarTarjetaLeida(idEstudiante: number, captureId: string) {
+    return this.http.post<{ resultado: string; uid: string; idTarjeta: number; idEstudiante: number; nombreEstudiante: string }>(`${this.base}/rfid/reader/associate/${idEstudiante}`, { capture_id: captureId });
+  }
+  cancelarLecturaRFID(captureId: string) { return this.http.post<{ cancelada: boolean }>(`${this.base}/rfid/reader/cancel`, { capture_id: captureId }); }
   reemplazarTarjeta(id: number, data: { uid: string; id_estudiante: number; propietario: string | null; vigencia_inicio: string | null; vigencia_termino: string | null }) {
     return this.http.put<Tarjeta>(`${this.base}/tarjetas/${id}`, data);
   }
