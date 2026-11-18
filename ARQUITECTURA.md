@@ -1,15 +1,15 @@
 # Arquitectura de EduTrack
 
-\`\`\`text
-RC522 --SPI--> Arduino UNO --USB Serial--> FastAPI --> PostgreSQL/Supabase
+```text
+RC522 --SPI--> Arduino UNO --USB Serial 9600--> FastAPI --> PostgreSQL/Supabase
                                             ^
-Angular standalone -------------------------|
-\`\`\`
+Angular standalone ------------------ HTTP --|
+```
 
-FastAPI administra una instancia persistente de backend/app/rfid_reader.py, iniciada y cerrada con el ciclo de vida de la aplicación. Un hilo detecta los puertos disponibles, identifica el firmware con PING, lee las respuestas seriales sin bloquear las rutas HTTP y recupera la conexión al perder USB. Para asociar una tarjeta, Angular solicita POST /rfid/reader/associate/{id_estudiante}; el endpoint captura un UID, valida 4/7/10 bytes, comprueba el estudiante y escribe en la tabla existente Credenciales_rfid. El identificador del alumno viaja ligado a esa única solicitud de captura.
+FastAPI administra una instancia persistente de `backend/app/rfid_reader.py` desde el ciclo de vida de la aplicación. Un hilo detecta puertos USB, valida el mensaje de inicialización del protocolo `EDUTRACK_RFID`, procesa UID válidos sin bloquear las rutas HTTP y vuelve a explorar tras desconexiones. El bloqueo de puerto compartido impide que el receptor legado lo abra simultáneamente.
 
-El firmware reader_service/arduino/lector_rfid.ino implementa protocolo ASCII v1 a 9600 baudios: PING, READ, CANCEL; respuestas READY:EDUTRACK_RFID:1:OK, CAPTURING, UID: <HEX>, CANCELLED y errores ERROR:RC522_INIT. El UID solo se reporta durante una captura solicitada.
+El firmware `reader_service/arduino/lector_rfid.ino` lee el RC522 por SPI y envía mensajes ASCII a 9600 baudios. Cada UID aparece como `EDUTRACK_RFID:UID:<HEX>`; inicio y errores usan el mismo prefijo para que el backend descarte diagnósticos. El sketch no usa Bluetooth ni SoftwareSerial.
 
-GET /rfid/reader/status informa conectividad al frontend. Las rutas de estado, asociación y cancelación requieren una sesión administrativa verificada. La ingesta RFID existente POST /rfid/lecturas y su lógica de asistencia permanecen disponibles; el servicio Python antiguo también abre USB serial y no se debe iniciar junto con FastAPI. Consulta HARDWARE.md para instalación y pruebas físicas.
+Cada UID en operación normal sigue la lógica existente de `POST /rfid/lecturas`: verifica el dispositivo en `"Dispositivos"`, la tarjeta y sus fechas en `"Credenciales_rfid"`, luego aplica la regla de entrada/salida y registra en las tablas existentes. La hora se crea en `America/Mexico_City`. El endpoint administrativo de asociación sigue disponible y captura una tarjeta con el mismo puerto serial.
 
-La conexión USB requiere que FastAPI se ejecute en la computadora conectada al Arduino. La aplicación Angular debe usar la URL local de esa instancia durante la operación del lector.
+`GET /rfid/reader/status`, asociación y cancelación requieren sesión administrativa. La lectura automática usa `ARDUINO_DEVICE_CODE` (registro activo existente) y `RFID_INGEST_TOKEN`. Angular continúa comunicándose con FastAPI por HTTP. Consulta `HARDWARE.md` para el cableado, instalación y pruebas.

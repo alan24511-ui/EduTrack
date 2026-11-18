@@ -1,7 +1,10 @@
 
-from fastapi import FastAPI
+import asyncio
+import logging
 from contextlib import asynccontextmanager
-from fastapi import HTTPException
+
+from fastapi import BackgroundTasks
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from psycopg import Error as PsycopgError
 
@@ -20,10 +23,30 @@ from app.routes import notificaciones as rutas_notificaciones
 from app.rfid_reader import configurar_lector
 
 
+def procesar_uid_serial(uid: str) -> None:
+    """Reutiliza la misma lógica de asistencia del endpoint de ingesta RFID."""
+    from app.config import obtener_settings
+    from app.routes.rfid import procesar_lectura
+    from app.schemas import LecturaRFIDEntrada
+
+    settings = obtener_settings()
+    if not settings.rfid_device_code:
+        raise RuntimeError("Configura ARDUINO_DEVICE_CODE con un dispositivo activo existente.")
+    tareas = BackgroundTasks()
+    resultado = procesar_lectura(
+        LecturaRFIDEntrada(uid=uid, codigo_dispositivo=settings.rfid_device_code),
+        tareas,
+        settings.rfid_ingest_token,
+    )
+    if tareas.tasks:
+        asyncio.run(tareas())
+    logging.getLogger(__name__).info("Resultado lectura RFID %s: %s", uid, resultado.get("resultado"))
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    import os
-    lector = configurar_lector(int(os.getenv("RFID_SERIAL_BAUD", "9600")), os.getenv("RFID_SERIAL_PORT", ""))
+    settings = obtener_settings()
+    lector = configurar_lector(settings.rfid_serial_baud, settings.rfid_serial_port, procesar_uid_serial)
     lector.start()
     yield
     lector.stop()

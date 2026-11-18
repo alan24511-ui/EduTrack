@@ -18,10 +18,20 @@ LOG = logging.getLogger(__name__)
 UID_RE = re.compile(r"^[0-9A-Fa-f]{8}(?:[0-9A-Fa-f]{6})?(?:[0-9A-Fa-f]{6})?$")
 
 
+def extraer_uid(linea: str) -> str | None:
+    """Devuelve solo UIDs del protocolo EduTrack; diagnóstico y texto libre se ignoran."""
+    prefijo = "EDUTRACK_RFID:UID:"
+    if not linea.startswith(prefijo):
+        return None
+    uid = linea[len(prefijo):].strip().upper()
+    return uid if UID_RE.fullmatch(uid) else None
+
+
 class RFIDReader:
-    def __init__(self, baud: int = 9600, preferred_port: str = ""):
+    def __init__(self, baud: int = 9600, preferred_port: str = "", on_uid=None):
         self.baud = baud
         self.preferred_port = preferred_port
+        self.on_uid = on_uid
         self._lock = threading.RLock()
         self._serial: Serial | None = None
         self._port_lock = None
@@ -138,11 +148,11 @@ class RFIDReader:
     def _candidate_ports(self):
         ports = list(list_ports.comports())
         if self.preferred_port:
-            ports.sort(key=lambda p: p.device != self.preferred_port)
+            return [port for port in ports if port.device == self.preferred_port]
         else:
-            ports.sort(key=lambda p: not any(s in f"{p.description} {p.manufacturer}".lower()
-                                             for s in ("arduino", "ch340", "ch341", "usb serial", "usb-serial", "ftdi")))
-        return ports
+            usb_serial = ("arduino", "ch340", "ch341", "usb serial", "usb-serial", "ftdi")
+            return [port for port in ports if port.device.startswith(("/dev/ttyACM", "/dev/ttyUSB"))
+                    or any(tag in f"{port.description} {port.manufacturer}".lower() for tag in usb_serial)]
 
     def _connect(self):
         for port in self._candidate_ports():
@@ -150,6 +160,8 @@ class RFIDReader:
                 return
             device = port.device
             lock_path = "/tmp/edutrack-rfid-" + hashlib.sha256(device.encode()).hexdigest()[:16] + ".lock"
+            port_lock = None
+            candidate = None
             try:
                 port_lock = open(lock_path, "w")
                 try:
@@ -159,13 +171,14 @@ class RFIDReader:
                     continue
                 candidate = Serial(device, self.baud, timeout=0.15, write_timeout=1)
                 time.sleep(1.8)  # El Uno reinicia al abrir el puerto USB.
-                candidate.reset_input_buffer()
-                candidate.write(b"PING\n")
                 deadline = time.monotonic() + 2
                 response = ""
                 while time.monotonic() < deadline:
                     line = candidate.readline().decode("ascii", errors="ignore").strip()
-                    if line.startswith("READY:EDUTRACK_RFID:1:"):
+                    if line == "EDUTRACK_RFID:INICIADO":
+                        response = line
+                        break
+                    if line == "EDUTRACK_RFID:ERROR:RC522_INIT":
                         response = line
                         break
                 if not response:
@@ -176,20 +189,22 @@ class RFIDReader:
                 with self._lock:
                     self._serial, self._port = candidate, device
                     self._port_lock = port_lock
-                    self._reader_ok = response.endswith(":OK")
-                    self._error = None if self._reader_ok else "El RC522 no respondió al firmware (" + response + ")."
+                    self._reader_ok = response == "EDUTRACK_RFID:INICIADO"
+                    self._error = None if self._reader_ok else "El firmware informa error de inicialización del RC522."
                 LOG.info("Lector EduTrack detectado en %s: %s", device, response)
                 return
             except (SerialException, OSError) as exc:
-                try:
-                    candidate.close()
-                except (NameError, SerialException, OSError):
-                    pass
-                try:
-                    fcntl.flock(port_lock.fileno(), fcntl.LOCK_UN)
-                    port_lock.close()
-                except (NameError, OSError):
-                    pass
+                if candidate is not None:
+                    try:
+                        candidate.close()
+                    except (SerialException, OSError):
+                        pass
+                if port_lock is not None:
+                    try:
+                        fcntl.flock(port_lock.fileno(), fcntl.LOCK_UN)
+                        port_lock.close()
+                    except OSError:
+                        pass
                 with self._lock:
                     self._error = f"No se pudo abrir {device}: {exc}"
 
@@ -204,29 +219,30 @@ class RFIDReader:
                     continue
                 continue
             try:
-                with self._lock:
-                    if not self._reader_ok and time.monotonic() - self._last_ping > 5:
-                        ser.write(b"PING\n")
-                        self._last_ping = time.monotonic()
                 line = ser.readline().decode("ascii", errors="ignore").strip()
                 if not line:
                     continue
-                if line == "ERROR:RC522_INIT":
+                if line == "EDUTRACK_RFID:ERROR:RC522_INIT":
                     with self._lock:
                         self._reader_ok = False
                         self._error = "El firmware informa que el RC522 no está inicializado."
-                elif line.startswith("UID:"):
-                    uid = line.partition(":")[2].strip().upper()
-                    if UID_RE.fullmatch(uid):
-                        with self._lock:
-                            capture = self._capture
-                            if capture and not capture["done"].is_set():
-                                capture["uid"] = uid
-                                capture["done"].set()
-                elif line.startswith("READY:EDUTRACK_RFID:1:"):
+                elif (uid := extraer_uid(line)) is not None:
+                    capturada = False
                     with self._lock:
-                        self._reader_ok = line.endswith(":OK")
-                        self._error = None if self._reader_ok else "RC522 no inicializado."
+                        capture = self._capture
+                        if capture and not capture["done"].is_set():
+                            capture["uid"] = uid
+                            capture["done"].set()
+                            capturada = True
+                    if self.on_uid and not capturada:
+                        try:
+                            self.on_uid(uid)
+                        except Exception:
+                            LOG.exception("No se pudo procesar la lectura RFID %s", uid)
+                elif line == "EDUTRACK_RFID:INICIADO":
+                    with self._lock:
+                        self._reader_ok = True
+                        self._error = None
             except (SerialException, OSError) as exc:
                 LOG.warning("Conexión RFID perdida: %s", exc)
                 with self._lock:
@@ -236,8 +252,8 @@ class RFIDReader:
 lector_rfid: RFIDReader | None = None
 
 
-def configurar_lector(baud: int, port: str = "") -> RFIDReader:
+def configurar_lector(baud: int, port: str = "", on_uid=None) -> RFIDReader:
     global lector_rfid
     if lector_rfid is None:
-        lector_rfid = RFIDReader(baud, port)
+        lector_rfid = RFIDReader(baud, port, on_uid)
     return lector_rfid

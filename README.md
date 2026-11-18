@@ -33,7 +33,7 @@ cp .env.example .env
 uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-La API queda en `http://localhost:8000`; Swagger en `/docs`. Configura `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_NAME`, `DATABASE_USER`, `DATABASE_PASSWORD`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `CORS_ORIGINS` y `RFID_INGEST_TOKEN` en el entorno/backend. No publiques secretos.
+La API queda en `http://localhost:8000`; Swagger en `/docs`. Configura `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_NAME`, `DATABASE_USER`, `DATABASE_PASSWORD`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `CORS_ORIGINS`, `RFID_INGEST_TOKEN` y `ARDUINO_DEVICE_CODE` en el entorno/backend. `ARDUINO_PORT` permite fijar el puerto USB (vacío = autodetección) y `ARDUINO_BAUDRATE` usa 9600 por omisión. No publiques secretos.
 
 ## Lector Arduino + RC522
 
