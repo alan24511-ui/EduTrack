@@ -9,19 +9,72 @@ import time
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, BackgroundTasks, Header, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException
 from psycopg import Error as PsycopgError
 
 from app.config import obtener_settings
 from app.database import obtener_conexion
 from app.asistencia_reglas import siguiente_evento
-from app.schemas import LecturaRFIDEntrada
+from app.schemas import LecturaRFIDEntrada, RFIDCapturaEntrada
 from app.firebase_service import notificar_tutores_estudiante
+from app.rfid_reader import configurar_lector
+from app.security import usuario_administrador
 
 router = APIRouter(prefix="/rfid", tags=["Lector RFID"])
 ZONA = ZoneInfo("America/Mexico_City")
 DEDUP_SEGUNDOS = 4
 _lecturas_recientes: dict[tuple[str, str], float] = {}
+
+
+@router.get("/reader/status")
+def estado_lector(_: dict = Depends(usuario_administrador)):
+    return configurar_lector(obtener_settings().rfid_serial_baud, obtener_settings().rfid_serial_port).status()
+
+
+@router.post("/reader/associate/{id_estudiante}")
+def asociar_desde_lector(id_estudiante: int, datos: RFIDCapturaEntrada, _: dict = Depends(usuario_administrador)):
+    """Captura una lectura física y asocia el UID de forma atómica al alumno objetivo."""
+    lector = configurar_lector(obtener_settings().rfid_serial_baud, obtener_settings().rfid_serial_port)
+    try:
+        captura_id = lector.begin_capture(datos.capture_id)
+    except RuntimeError as error:
+        raise HTTPException(status_code=409 if lector.status()["capturando"] else 503, detail=str(error)) from error
+    try:
+        uid = lector.wait_capture(captura_id, timeout=60)
+        if lector.is_cancelled(captura_id):
+            raise HTTPException(status_code=409, detail="Lectura cancelada.")
+        try:
+            with lector.proteger_captura(captura_id):
+                with obtener_conexion() as conn, conn.cursor() as cur:
+                    cur.execute('SELECT "Nombre" FROM "Estudiantes" WHERE "Id_Estudiante"=%s FOR UPDATE', (id_estudiante,))
+                    alumno = cur.fetchone()
+                    if not alumno:
+                        raise HTTPException(status_code=404, detail="El alumno seleccionado ya no existe.")
+                    cur.execute('SELECT 1 FROM "Credenciales_rfid" WHERE "Id_Estudiante"=%s', (id_estudiante,))
+                    if cur.fetchone():
+                        raise HTTPException(status_code=409, detail="Este alumno ya tiene una tarjeta asociada.")
+                    cur.execute('INSERT INTO "Credenciales_rfid" ("UID_tarjeta", "Id_Estudiante", "Propietario") VALUES (%s,%s,%s) RETURNING "id_Tarjeta"', (uid, id_estudiante, alumno[0]))
+                    tarjeta_id = cur.fetchone()[0]
+                    return {"resultado": "asociada", "uid": uid, "idTarjeta": tarjeta_id, "idEstudiante": id_estudiante, "nombreEstudiante": alumno[0]}
+        except PsycopgError as error:
+            if getattr(error, "sqlstate", None) == "23505":
+                raise HTTPException(status_code=409, detail="UID duplicado o el alumno ya tiene una tarjeta asociada.") from error
+            if getattr(error, "sqlstate", None) == "23503":
+                raise HTTPException(status_code=404, detail="El alumno no existe.") from error
+            raise HTTPException(status_code=503, detail="No fue posible guardar la asociación en PostgreSQL.") from error
+        except InterruptedError as error:
+            raise HTTPException(status_code=409, detail=str(error)) from error
+    except TimeoutError as error:
+        raise HTTPException(status_code=408, detail=str(error)) from error
+    except InterruptedError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    except RuntimeError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+
+
+@router.post("/reader/cancel")
+def cancelar_lectura_lector(datos: RFIDCapturaEntrada, _: dict = Depends(usuario_administrador)):
+    return {"cancelada": configurar_lector(obtener_settings().rfid_serial_baud, obtener_settings().rfid_serial_port).cancel_capture(datos.capture_id)}
 
 
 def _validar_lector(x_reader_token: str):

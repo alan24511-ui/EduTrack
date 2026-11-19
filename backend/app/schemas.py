@@ -140,3 +140,7 @@ class LecturaRFIDEntrada(BaseModel):
         if len(self.uid) not in (8, 14, 20):
             raise ValueError("UID hexadecimal no soportado.")
         return self
+
+
+class RFIDCapturaEntrada(BaseModel):
+    capture_id: str = Field(min_length=36, max_length=36, pattern=r"^[0-9a-fA-F-]{36}$")

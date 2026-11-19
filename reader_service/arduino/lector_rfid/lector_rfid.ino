@@ -47,3 +47,6 @@ void loop() {
   lector.PCD_StopCrypto1();
   delay(80);
 }
+
+
+

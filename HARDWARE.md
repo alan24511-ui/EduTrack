@@ -1,81 +1,101 @@
-# Lector RFID Arduino + RC522
+# Lector RFID con Arduino UNO y RC522
 
 ## Arquitectura
 
 ```text
-RC522 --SPI--> Arduino --USB serial 9600 baudios--> Python + cola SQLite
-                                                  | POST /rfid/lecturas
-                                                  v
-                                      FastAPI --> PostgreSQL / Supabase
+RC522 --SPI--> Arduino UNO --USB Serial 9600--> FastAPI persistente --> PostgreSQL/Supabase
+                                                        ^
+Angular -------------------------------- HTTP -----------|
 ```
 
-El Arduino solo lee el RC522 y emite una línea por tarjeta, por ejemplo `UID: A1B2C3D4`. Python escucha el puerto serial, guarda las lecturas en `reader_service/data/readings.sqlite3` y sincroniza hasta el tamaño de lote configurado con el endpoint existente `POST /rfid/lecturas`. El endpoint acepta un evento por solicitud, por lo que cada ciclo del lote hace varias solicitudes. La cola elimina cada registro únicamente tras recibir una respuesta HTTP exitosa. También se usa `POST /rfid/heartbeat` mientras el receptor está ejecutándose.
+FastAPI corre en la computadora conectada al Arduino. Mantiene abierto el puerto USB, detecta el dispositivo y vuelve a conectarse tras una desconexión. Cada UID se procesa con la misma lógica del endpoint `/rfid/lecturas`. La captura administrativa de tarjetas en Alumnos también usa ese lector.
 
-## Conectar RC522 a Arduino UNO/Nano
+## Cableado
 
-Haz las conexiones con el Arduino desconectado del USB. El RC522 usa señales de 3.3 V: conecta VCC a 3.3 V, nunca a 5 V. Los nombres de pines SPI dependen de la placa; en UNO/Nano son:
-
-| RC522 | Arduino UNO/Nano |
+| RC522 | Arduino UNO |
 |---|---|
 | SDA / SS | D10 |
 | SCK | D13 |
 | MOSI | D11 |
 | MISO | D12 |
 | RST | D9 |
+| VCC | 3.3V |
 | GND | GND |
-| 3.3V | 3.3V |
 
-En Arduino Mega, usa SS D53, SCK D52, MOSI D51, MISO D50; cambia `PIN_SS` a 53 en el firmware. Comprueba el pinout de la placa concreta y no conectes señales de 5 V al módulo.
+El RC522 trabaja a 3.3 V. No conectes VCC ni sus señales a 5 V.
 
 ## Cargar el firmware
 
-1. Instala Arduino IDE y la biblioteca **MFRC522** (Miguel Balboa) desde Library Manager.
-2. Abre `reader_service/arduino/lector_rfid.ino`.
-3. Selecciona la placa y el puerto correctos y carga el sketch.
-4. Abre Serial Monitor a **9600 baudios**. Al acercar una tarjeta debe aparecer `UID: ...`. Una tarjeta que permanece sobre el lector no debe generar líneas repetidas; retírala y preséntala de nuevo para leerla otra vez.
-5. Cierra Serial Monitor antes de iniciar Python, ya que solo un programa puede usar el puerto a la vez.
+1. Instala Arduino IDE y, desde Library Manager, la biblioteca **MFRC522** de Miguel Balboa.
+2. Abre `reader_service/arduino/lector_rfid.ino`, selecciona **Arduino Uno** y el puerto USB correcto.
+3. Pulsa **Subir**. Cierra Arduino IDE o Serial Monitor después de la carga para liberar el puerto.
 
-## Configurar e iniciar Python
+El firmware no usa HC-05, Bluetooth, comandos AT ni `SoftwareSerial`. Mantiene las conexiones SPI de la tabla.
 
-Se requiere Python 3.10 o posterior. Desde la raíz del repositorio:
+## Preparar Fedora y FastAPI
+
+Identifica el puerto Arduino:
 
 ```bash
-cd reader_service
-python -m venv .venv
+ls /dev/ttyACM* /dev/ttyUSB*
+```
+
+Uno de los patrones puede no encontrar archivos. Configura `backend/.env` con credenciales de PostgreSQL y Supabase, y estas variables RFID:
+
+```dotenv
+ARDUINO_PORT=/dev/ttyACM0
+ARDUINO_BAUDRATE=9600
+ARDUINO_DEVICE_CODE=CODIGO_DE_UN_DISPOSITIVO_EXISTENTE
+RFID_INGEST_TOKEN=un_token_aleatorio_compartido
+```
+
+`ARDUINO_PORT` puede quedar vacío para detección automática. `ARDUINO_DEVICE_CODE` tiene que ser el código de un registro ya existente y activo en la tabla `"Dispositivos"`; no se crea ni modifica el esquema. El backend usa el token de ingesta existente al pasar cada lectura por la lógica de `/rfid/lecturas`.
+
+Instala dependencias e inicia el backend:
+
+```bash
+cd /home/chato/EduTrack/backend
+python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-Configura las credenciales y el puerto del Arduino en el shell. En Linux suele ser `/dev/ttyACM0` o `/dev/ttyUSB0`; en Windows, `COM3` (consulta el Administrador de dispositivos); en macOS, `/dev/cu.usbmodem...`.
+`pyserial` ya figura en `backend/requirements.txt`. Angular sigue usando HTTP hacia FastAPI y no requiere cambios de diseño.
+
+## Permisos del puerto
+
+Comprueba los permisos y grupos:
 
 ```bash
-export EDUTRACK_SERIAL_PORT=/dev/ttyACM0
-export EDUTRACK_SERIAL_BAUD=9600
-export EDUTRACK_DEVICE_CODE='CODIGO_DE_UN_DISPOSITIVO_ACTIVO'
-export EDUTRACK_RFID_TOKEN='MISMO_VALOR_QUE_RFID_INGEST_TOKEN_EN_FASTAPI'
-export EDUTRACK_RFID_ENDPOINT='http://localhost:8000/rfid/lecturas'
-export EDUTRACK_RFID_QUEUE='./data/readings.sqlite3'
-export EDUTRACK_SYNC_INTERVAL=10
-export EDUTRACK_BATCH_SIZE=50
-export EDUTRACK_DEDUPE_SECONDS=2
-python reader_service.py
+ls -l /dev/ttyACM0
+groups
 ```
 
-El usuario del sistema debe tener permiso para abrir el puerto serial (en Linux puede requerir pertenecer al grupo `dialout` y volver a iniciar sesión). El programa reintenta la conexión USB si se desconecta. `EDUTRACK_RFID_TOKEN` debe coincidir con `RFID_INGEST_TOKEN` del backend y el código debe corresponder a un lector activo de `Dispositivos`. No guardes esos valores en Git. Los mismos ajustes se pueden pasar con `--serial-port`, `--baud-rate`, `--device-code`, `--endpoint`, `--queue`, `--sync-interval`, `--batch-size` y `--dedupe-seconds`.
+Si el grupo del dispositivo es `dialout`, agrega tu usuario y vuelve a iniciar sesión:
 
-El intervalo predeterminado de envío es 10 segundos y el lote predeterminado es de 50. La cola SQLite es durable entre reinicios. Si ocurre un fallo HTTP o de red, las lecturas no confirmadas permanecen pendientes para el siguiente ciclo. El filtro local evita la repetición del mismo UID durante dos segundos; Arduino además informa una sola vez por presencia de tarjeta.
+```bash
+sudo usermod -aG dialout "$USER"
+```
 
-## Prueba de extremo a extremo
+Usa el grupo que muestre `ls -l` si fuera diferente. Cierra Serial Monitor y otros programas que puedan ocupar el puerto. FastAPI y el receptor legado de EduTrack respetan un bloqueo compartido para impedir que ambos abran el puerto a la vez.
 
-1. Configura las variables de conexión de Supabase y `RFID_INGEST_TOKEN` en `backend/.env`, y arranca FastAPI desde `backend` con `uvicorn app.main:app --reload`.
-2. Comprueba `http://localhost:8000/health` y `http://localhost:8000/health/db`.
-3. Registra una tarjeta de prueba en EduTrack y confirma que el código del dispositivo lector está activo.
-4. Carga el firmware, conecta Arduino por USB, cierra Serial Monitor y ejecuta `python reader_service.py` con las variables anteriores.
-5. Presenta la tarjeta. El log debe indicar que se encoló y, al sincronizar, que el lote fue enviado. Comprueba el evento en la API/Swagger (`/docs`) y la asistencia en la aplicación.
-6. Para validar la cola offline, detén temporalmente el backend, presenta una tarjeta y confirma que el proceso mantiene lecturas pendientes. Inicia de nuevo el backend: el siguiente ciclo las enviará y retirará de SQLite.
+## Protocolo y verificación
 
-## Contrato, hora y reintentos
+El puerto usa 9600 baudios. Arduino envía una línea por mensaje:
 
-El receptor reutiliza `POST /rfid/lecturas` con cuerpo `{"uid":"...", "codigo_dispositivo":"..."}` y encabezado `X-Reader-Token`; no se añadió un endpoint por lotes ni se cambió el esquema. FastAPI valida UID de 4, 7 o 10 bytes, verifica que el dispositivo esté activo y conserva la lógica de tarjetas registradas/vigentes. Asigna el momento del evento con la zona `America/Mexico_City`. La hora de captura se guarda localmente para diagnóstico, pero el contrato actual no la envía: lecturas pendientes se registran en el servidor al sincronizar.
+```text
+EDUTRACK_RFID:INICIADO
+EDUTRACK_RFID:UID:04A1B2C3
+EDUTRACK_RFID:ERROR:RC522_INIT
+```
 
-Como el endpoint no acepta clave de idempotencia, si FastAPI confirma una escritura pero se pierde su respuesta, un reintento puede volver a llegar; el backend aplica su deduplicación actual de cuatro segundos. No es posible garantizar exactamente una vez durante ese fallo ambiguo sin extender el contrato y persistencia.
+Cada byte del UID se representa con dos dígitos hexadecimales. El firmware emite una sola lectura mientras la tarjeta está presente; retírala y vuelve a acercarla para leerla otra vez.
+
+Para inspeccionar el flujo sin FastAPI, detén el backend y abre temporalmente el puerto con Serial Monitor a 9600 baudios o `screen /dev/ttyACM0 9600`. Cierra ese programa antes de reiniciar FastAPI. Revisa `http://localhost:8000/health`, `/health/db` y, autenticado como administrador, `GET /rfid/reader/status`.
+
+Después de iniciar FastAPI, presenta una tarjeta registrada: la respuesta y los logs deben mostrar su resultado, y las tablas existentes `"Asistencia"` y `"Registros_accesos"` reciben los eventos según la regla actual. UID desconocido, vigencia vencida y dispositivo inactivo se rechazan o registran según la lógica existente. El backend aplica deduplicación de cuatro segundos.
+
+Para verificar la reconexión, desconecta y vuelve a conectar el Arduino. FastAPI explora el puerto de nuevo y los logs deben mostrar la reconexión en unos segundos.
+
+Las pruebas simuladas de backend cubren el formato, el filtrado de diagnósticos, la reconexión, las lecturas conocidas/desconocidas/vencidas y duplicados. Requieren hardware real la inicialización efectiva del RC522, la lectura por SPI, la recepción física por USB y la recuperación tras reconectar el cable.

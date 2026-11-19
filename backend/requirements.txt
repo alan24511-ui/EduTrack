@@ -3,6 +3,7 @@ fastapi==0.148.0
 httpx==0.28.1
 psycopg[binary]==3.3.6
 pydantic-settings==2.16.0
+pyserial>=3.5,<4.0
 python-dotenv==1.2.4
 resend>=2.0.0,<3.0.0
 firebase-admin>=6.5,<8.0

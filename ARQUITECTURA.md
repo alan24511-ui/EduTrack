@@ -1,29 +1,15 @@
 # Arquitectura de EduTrack
 
-## Diseño
-
 ```text
-Arduino + RC522 --USB Serial--> Python + SQLite (cola local)
-                                      |
-                                      | POST /rfid/lecturas
-                                      v
-Angular <--> FastAPI <--> PostgreSQL / Supabase
+RC522 --SPI--> Arduino UNO --USB Serial 9600--> FastAPI --> PostgreSQL/Supabase
+                                            ^
+Angular standalone ------------------ HTTP --|
 ```
 
-Arduino se limita a leer tarjetas RC522 y enviar el UID en texto serial (`UID: A1B2C3D4`, 9600 baudios). El servicio local de Python interpreta ese protocolo, elimina repeticiones breves, guarda lecturas en SQLite y las sincroniza por ciclos. FastAPI valida el UID, verifica el dispositivo y la tarjeta, registra asistencia y se conecta a PostgreSQL/Supabase. Angular consume la API sin cambios a su navegación, vistas o roles.
+FastAPI administra una instancia persistente de `backend/app/rfid_reader.py` desde el ciclo de vida de la aplicación. Un hilo detecta puertos USB, valida el mensaje de inicialización del protocolo `EDUTRACK_RFID`, procesa UID válidos sin bloquear las rutas HTTP y vuelve a explorar tras desconexiones. El bloqueo de puerto compartido impide que el receptor legado lo abra simultáneamente.
 
-## Componentes
+El firmware `reader_service/arduino/lector_rfid.ino` lee el RC522 por SPI y envía mensajes ASCII a 9600 baudios. Cada UID aparece como `EDUTRACK_RFID:UID:<HEX>`; inicio y errores usan el mismo prefijo para que el backend descarte diagnósticos. El sketch no usa Bluetooth ni SoftwareSerial.
 
-- `reader_service/arduino/lector_rfid.ino`: firmware para RC522 mediante la biblioteca MFRC522.
-- `reader_service/reader_service.py` y `serial_reader.py`: recepción USB serial y coordinación del envío.
-- `reader_service/queue_store.py`: cola local durable SQLite.
-- `reader_service/synchronizer.py`: envío del lote al endpoint actual, una lectura por solicitud.
-- `backend/app/routes/rfid.py`: endpoints autenticados de lectura y heartbeat.
+Cada UID en operación normal sigue la lógica existente de `POST /rfid/lecturas`: verifica el dispositivo en `"Dispositivos"`, la tarjeta y sus fechas en `"Credenciales_rfid"`, luego aplica la regla de entrada/salida y registra en las tablas existentes. La hora se crea en `America/Mexico_City`. El endpoint administrativo de asociación sigue disponible y captura una tarjeta con el mismo puerto serial.
 
-El endpoint acepta `uid` y `codigo_dispositivo`, usa `X-Reader-Token` y valida tarjetas registradas, vigencia y estado del lector. La hora del registro la asigna FastAPI con `America/Mexico_City`. No se modificó el esquema de base de datos. Arduino no realiza llamadas HTTP ni se conecta a Supabase.
-
-## Reintentos y límites
-
-Python conserva cada fila hasta una respuesta HTTP exitosa. Si falla el envío, pausa el lote y reintenta en el siguiente ciclo. El backend deduplica lecturas repetidas de una tarjeta/dispositivo durante cuatro segundos y el receptor filtra duplicados inmediatos durante dos segundos por defecto. El contrato de la API no admite un identificador idempotente; una respuesta perdida después de un commit puede dar lugar a un reintento ambiguo. Tampoco se envía hora de captura local, así que una lectura encolada offline se registra con la hora de recepción del backend.
-
-La integración de hardware requiere prueba física con Arduino, RC522 y puerto USB de la computadora. Consulta [HARDWARE.md](HARDWARE.md) para cableado, instalación, configuración y verificación extremo a extremo.
+`GET /rfid/reader/status`, asociación y cancelación requieren sesión administrativa. La lectura automática usa `ARDUINO_DEVICE_CODE` (registro activo existente) y `RFID_INGEST_TOKEN`. Angular continúa comunicándose con FastAPI por HTTP. Consulta `HARDWARE.md` para el cableado, instalación y pruebas.
