@@ -56,6 +56,12 @@
         </div>
         @if (error()) { <div class="alert alert-danger" role="alert">{{ error() }}</div> }
         @if (cargando()) { <div class="small text-secondary mb-2" role="status">Consultando historial…</div> }
+        @for (evento of eventosLector(); track evento.id) {
+            <div class="alert {{ claseEvento(evento.resultado) }} py-2 mb-2" role="status">
+                <strong>{{ evento.estudiante || 'Lectura RFID' }}</strong>: {{ evento.mensaje }}
+                <span class="small ms-2">{{ evento.fecha }} {{ evento.hora }}</span>
+            </div>
+        }
 
         <!-- Tabla de historial -->
         <section class="bg-white rounded-4 overflow-hidden">

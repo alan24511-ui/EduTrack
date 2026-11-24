@@ -6,7 +6,7 @@ export const routes: Routes = [
   { path: 'registro', loadComponent: () => import('./pages/registro/registro').then((m) => m.Registro) },
   { path: 'verificar-otp', loadComponent: () => import('./pages/verificar-otp/verificar-otp').then((m) => m.VerificarOtp) },
   { path: 'recuperar-password', loadComponent: () => import('./pages/recuperar-password/recuperar-password').then((m) => m.RecuperarPassword) },
-  { path: 'vinculacion', loadComponent: () => import('./pages/vinculacion/vinculacion').then((m) => m.Vinculacion), canActivate: [authGuard] },
+  { path: 'vinculacion', loadComponent: () => import('./pages/vinculacion/vinculacion').then((m) => m.Vinculacion), canActivate: [tutorGuard] },
   { path: 'dashboard', loadComponent: () => import('./pages/dashboard/dashboard').then((m) => m.Dashboard), canActivate: [authGuard] },
   { path: 'estudiantes', loadComponent: () => import('./pages/estudiantes/estudiantes').then((m) => m.Estudiantes), canActivate: [adminGuard] },
   { path: 'tarjetas', loadComponent: () => import('./pages/tarjetas/tarjetas').then((m) => m.Tarjetas), canActivate: [adminGuard] },

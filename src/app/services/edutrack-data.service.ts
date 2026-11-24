@@ -38,6 +38,17 @@ export interface AsistenciaRegistro {
   grupo: string;
 }
 
+export interface EventoLector {
+  id: number;
+  resultado: 'ENTRADA_REGISTRADA' | 'SALIDA_REGISTRADA' | 'LECTURA_DUPLICADA' | 'ASISTENCIA_COMPLETA' | 'TARJETA_NO_REGISTRADA' | 'TARJETA_DESACTIVADA' | 'ERROR_PROCESAMIENTO';
+  uid: string;
+  estudiante: string | null;
+  evento: string | null;
+  fecha: string;
+  hora: string;
+  mensaje: string;
+}
+
 export interface Dashboard {
   rol: 'administrador' | 'superadministrador' | 'tutor';
   totalEstudiantes?: number;
@@ -89,11 +100,12 @@ export class EduTrackDataService {
   crearTarjeta(data: { uid: string; id_estudiante: number; propietario: string | null; vigencia_inicio: string | null; vigencia_termino: string | null }) {
     return this.http.post<Tarjeta>(`${this.base}/tarjetas`, data);
   }
-  estadoLector() { return this.http.get<{ conectado: boolean; puerto: string | null; lectorListo: boolean; capturando: boolean; error: string | null }>(`${this.base}/rfid/reader/status`); }
+  estadoLector() { return this.http.get<{ conectado: boolean; estado: 'conectado' | 'desconectado'; tipo: string; puerto: string; baud: number; lectorListo: boolean; capturando: boolean; error: string | null; ultimoContacto: number | null; timeoutSegundos: number }>(`${this.base}/rfid/reader/status`); }
   asociarTarjetaLeida(idEstudiante: number, captureId: string) {
     return this.http.post<{ resultado: string; uid: string; idTarjeta: number; idEstudiante: number; nombreEstudiante: string }>(`${this.base}/rfid/reader/associate/${idEstudiante}`, { capture_id: captureId });
   }
   cancelarLecturaRFID(captureId: string) { return this.http.post<{ cancelada: boolean }>(`${this.base}/rfid/reader/cancel`, { capture_id: captureId }); }
+  eventosLector(after = 0) { return this.http.get<{ lastId: number; eventos: EventoLector[] }>(`${this.base}/rfid/reader/events`, { params: { after } }); }
   reemplazarTarjeta(id: number, data: { uid: string; id_estudiante: number; propietario: string | null; vigencia_inicio: string | null; vigencia_termino: string | null }) {
     return this.http.put<Tarjeta>(`${this.base}/tarjetas/${id}`, data);
   }

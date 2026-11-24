@@ -2,7 +2,7 @@
 
 from functools import lru_cache
 
-from pydantic import AliasChoices, Field
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Reutiliza la misma ruta de .env que ya usa app/database.py para no duplicar la carga.
@@ -25,9 +25,7 @@ class Settings(BaseSettings):
     supabase_url: str = ""
     supabase_anon_key: str = ""
     rfid_ingest_token: str = ""
-    rfid_device_code: str = Field(default="", validation_alias=AliasChoices("ARDUINO_DEVICE_CODE", "RFID_DEVICE_CODE"))
-    rfid_serial_baud: int = Field(default=9600, validation_alias=AliasChoices("ARDUINO_BAUDRATE", "RFID_SERIAL_BAUD"))
-    rfid_serial_port: str = Field(default="", validation_alias=AliasChoices("ARDUINO_PORT", "RFID_SERIAL_PORT"))
+    rfid_debounce_seconds: int = Field(default=5, ge=1, validation_alias="RFID_DEBOUNCE_SECONDS")
 
     # --- Servicios opcionales ---
     firebase_project_id: str = ""
@@ -37,9 +35,6 @@ class Settings(BaseSettings):
     resend_api_key: str = ""
     email_from: str = ""
 
-    # --- Vinculación ---
-    # Minutos que un código de vinculación permanece válido desde su creación.
-    vinculacion_codigo_expiracion_minutos: int = 15
     # --- CORS ---
     cors_origins: str = "http://localhost:4200"
 
