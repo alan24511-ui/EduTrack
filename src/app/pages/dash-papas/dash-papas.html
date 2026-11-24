@@ -2,21 +2,31 @@
   <div class="row min-vh-100">
     <app-sidebar />
     <main class="col-12 col-md-9 col-lg-9 col-xxl-10 p-3 p-lg-4">
-      <header class="d-flex justify-content-between align-items-center mb-4">
+      <header class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
         <div><h1 class="h2 text-primary fw-bold mb-1">¡Hola, {{ auth.tutor()?.nombre }}!</h1><p class="text-secondary mb-0">Consulta la asistencia de tus estudiantes vinculados.</p></div>
+        <div class="d-flex flex-wrap align-items-end gap-2">
+          @if (datos(); as selector) { @if (selector.estudiantes.length) {
+            <div><label for="estudiante-activo" class="form-label fw-semibold mb-1">Estudiante</label>
+              <select id="estudiante-activo" class="form-select" [value]="estudianteActivoId()" (change)="cambiarEstudiante($any($event.target).value)">
+                @for (e of selector.estudiantes; track e.id) { <option [value]="e.id">{{ e.nombre }} · {{ e.grupo }}</option> }
+              </select>
+            </div>
+          } }
+          <a routerLink="/vinculacion" class="btn btn-outline-primary">Vincular estudiante</a>
+        </div>
       </header>
       @if (cargando()) { <div class="text-primary" role="status">Cargando información de asistencia…</div> }
       @if (error()) { <div class="alert alert-danger" role="alert">{{ error() }}</div> }
       @if (datos(); as d) {
         <div class="row row-cols-1 row-cols-md-3 g-3 mb-4">
           <div class="col"><section class="card h-100 shadow-sm"><div class="card-body"><h2 class="h6 text-primary">Estudiantes vinculados</h2><p class="display-6 fw-bold mb-0">{{ d.estudiantes.length }}</p></div></section></div>
-          <div class="col"><section class="card h-100 shadow-sm"><div class="card-body"><h2 class="h6 text-primary">Registros recientes</h2><p class="display-6 fw-bold mb-0">{{ d.asistencias.length }}</p></div></section></div>
-          <div class="col"><section class="card h-100 shadow-sm"><div class="card-body"><h2 class="h6 text-primary">Última fecha registrada</h2><p class="h4 fw-bold mb-0">{{ d.asistencias[0]?.fecha ? (d.asistencias[0].fecha | date:'d MMM y') : '—' }}</p></div></section></div>
+          <div class="col"><section class="card h-100 shadow-sm"><div class="card-body"><h2 class="h6 text-primary">Registros recientes</h2><p class="display-6 fw-bold mb-0">{{ asistenciasActivas(d).length }}</p></div></section></div>
+          <div class="col"><section class="card h-100 shadow-sm"><div class="card-body"><h2 class="h6 text-primary">Última fecha registrada</h2><p class="h4 fw-bold mb-0">{{ asistenciasActivas(d)[0]?.fecha ? (asistenciasActivas(d)[0].fecha | date:'d MMM y') : '—' }}</p></div></section></div>
         </div>
         <div class="row g-4">
           <section class="col-12 col-xl-8"><div class="card shadow-sm"><div class="card-body"><h2 class="h5 text-primary fw-bold">Últimos registros de asistencia</h2>
             <div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-primary"><tr><th>Estudiante</th><th>Grupo</th><th>Fecha</th><th>Entrada</th><th>Salida</th><th>Estado</th></tr></thead><tbody>
-              @for (r of d.asistencias; track r.fecha + r.matricula + r.horaEntrada) { <tr><td>{{ r.nombre }}</td><td>{{ r.grupo }}</td><td>{{ r.fecha | date:'d/M/y' }}</td><td>{{ r.horaEntrada | date:'shortTime' }}</td><td>{{ r.horaSalida ? (r.horaSalida | date:'shortTime') : '—' }}</td><td>{{ r.estado }}</td></tr> }
+              @for (r of asistenciasActivas(d); track r.fecha + r.matricula + r.horaEntrada) { <tr><td>{{ r.nombre }}</td><td>{{ r.grupo }}</td><td>{{ r.fecha | date:'d/M/y' }}</td><td>{{ r.horaEntrada | date:'shortTime' }}</td><td>{{ r.horaSalida ? (r.horaSalida | date:'shortTime') : '—' }}</td><td>{{ r.estado }}</td></tr> }
               @empty { <tr><td colspan="6" class="text-center text-secondary py-4">Todavía no hay registros de asistencia para tus estudiantes.</td></tr> }
             </tbody></table></div>
           </div></div></section>

@@ -1,15 +1,12 @@
 """Pruebas de autorización sin usuarios ni base de datos reales."""
 
-from datetime import datetime, timezone
-from types import SimpleNamespace
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from fastapi import HTTPException
 
-from app.routes.vinculacion import generar_codigo_vinculacion, router as vinculacion_router
-from app.schemas import GenerarCodigoEntrada
-from app.security import es_administrador, usuario_actual, usuario_administrador
+from app.routes.vinculacion import _validar_tutor, router as vinculacion_router
+from app.security import usuario_actual
 
 
 class RoleAccessTests(unittest.TestCase):
@@ -37,70 +34,21 @@ class RoleAccessTests(unittest.TestCase):
                 usuario_actual("Bearer token-invalido")
         self.assertEqual(error.exception.status_code, 401)
 
-    def test_admin_role_lookup_uses_authenticated_auth_id(self):
-        cursor = MagicMock()
-        cursor.__enter__.return_value = cursor
-        cursor.fetchone.return_value = (1,)
-        connection = MagicMock()
-        connection.__enter__.return_value = connection
-        connection.cursor.return_value = cursor
-
-        with patch("app.security.obtener_conexion", return_value=connection):
-            self.assertTrue(es_administrador("auth-user-from-verified-token"))
-
-        cursor.execute.assert_called_once_with(
-            'SELECT 1 FROM "Administradores" WHERE auth_user_id = %s',
-            ("auth-user-from-verified-token",),
+    def test_linking_exposes_search_and_confirmation_routes_only(self):
+        self.assertEqual(
+            {route.path for route in vinculacion_router.routes},
+            {"/buscar", "/confirmar"},
         )
 
-    def test_tutor_cannot_generate_code_even_with_client_admin_claim(self):
-        with patch("app.security.obtener_rol", return_value="tutor"):
+    def test_linking_is_exclusive_to_the_authenticated_tutor(self):
+        with patch("app.routes.vinculacion.obtener_rol", return_value="tutor"):
+            with patch("app.routes.vinculacion._obtener_id_tutor", return_value=7):
+                self.assertEqual(_validar_tutor(self.usuario_tutor), 7)
+
+        with patch("app.routes.vinculacion.obtener_rol", return_value="administrador"):
             with self.assertRaises(HTTPException) as error:
-                usuario_administrador(self.usuario_tutor)
+                _validar_tutor(self.usuario_admin)
         self.assertEqual(error.exception.status_code, 403)
-
-        endpoint = next(
-            route for route in vinculacion_router.routes if route.path.endswith("/codigos")
-        )
-        self.assertIn(
-            usuario_administrador,
-            [dependencia.call for dependencia in endpoint.dependant.dependencies],
-        )
-
-    def test_admin_can_generate_code(self):
-        with patch("app.security.obtener_rol", return_value="administrador"):
-            usuario = usuario_administrador(self.usuario_admin)
-        cursor = MagicMock()
-        cursor.__enter__.return_value = cursor
-        cursor.fetchone.side_effect = [
-            (41,),
-            (9, datetime(2026, 1, 1, 0, 15, tzinfo=timezone.utc)),
-        ]
-        connection = MagicMock()
-        connection.__enter__.return_value = connection
-        connection.cursor.return_value = cursor
-
-        with (
-            patch("app.routes.vinculacion.obtener_conexion", return_value=connection),
-            patch(
-                "app.routes.vinculacion.obtener_settings",
-                return_value=SimpleNamespace(vinculacion_codigo_expiracion_minutos=15),
-            ),
-            patch("app.routes.vinculacion.generar_codigo", return_value="ABCDEFGHJKLM"),
-            patch("app.routes.vinculacion.hashear_codigo", return_value="hash"),
-        ):
-            response = generar_codigo_vinculacion(
-                GenerarCodigoEntrada(matricula="A-1"),
-                usuario,
-            )
-
-        self.assertEqual(response["codigo"], "ABCDEFGHJKLM")
-        self.assertEqual(response["id_codigo"], 9)
-
-    def test_superadmin_has_admin_access(self):
-        with patch("app.security.obtener_rol", return_value="superadministrador"):
-            usuario = usuario_administrador(self.usuario_admin)
-        self.assertEqual(usuario, self.usuario_admin)
 
 
 if __name__ == "__main__":

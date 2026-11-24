@@ -44,16 +44,8 @@ class LoginEntrada(BaseModel):
     password: str = Field(min_length=1, max_length=72)
 
 
-class GenerarCodigoEntrada(BaseModel):
-    matricula: str = Field(min_length=1, max_length=40)
-
-
-class ConsultaCodigoEntrada(BaseModel):
-    codigo: str = Field(min_length=4, max_length=32)
-
-
 class ConfirmacionVinculacionEntrada(BaseModel):
-    codigo: str = Field(min_length=4, max_length=32)
+    id_estudiante: int = Field(gt=0)
     parentesco: str = Field(min_length=2, max_length=60)
 
 
@@ -144,3 +136,14 @@ class LecturaRFIDEntrada(BaseModel):
 
 class RFIDCapturaEntrada(BaseModel):
     capture_id: str = Field(min_length=36, max_length=36, pattern=r"^[0-9a-fA-F-]{36}$")
+
+
+class RFIDUIDCaptura(BaseModel):
+    uid: str = Field(min_length=8, max_length=20, pattern=r"^[0-9A-Fa-f]+$")
+    codigo_dispositivo: str = Field(min_length=1, max_length=120)
+
+    @model_validator(mode="after")
+    def validar_uid(self):
+        if len(self.uid) not in (8, 14, 20):
+            raise ValueError("UID hexadecimal no soportado.")
+        return self

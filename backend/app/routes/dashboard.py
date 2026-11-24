@@ -65,13 +65,18 @@ def dashboard_tutor(usuario: dict = Depends(usuario_verificado)):
             asistencias = []
             if ids:
                 cur.execute(
+                    'SELECT "Fecha","Hora_Entrada","Hora_Salida","Estado",'
+                    '"Id_Estudiante","Nombre","Matricula","Grupo" FROM ('
                     'SELECT a."Fecha",a."Hora_Entrada",a."Hora_Salida",a."Estado",'
-                    'e."Id_Estudiante",e."Nombre",e."Matricula",e."Grupo" '
+                    'e."Id_Estudiante",e."Nombre",e."Matricula",e."Grupo",'
+                    'ROW_NUMBER() OVER (PARTITION BY e."Id_Estudiante" '
+                    'ORDER BY a."Fecha" DESC,a."Hora_Entrada" DESC NULLS LAST) AS numero '
                     'FROM "Asistencia" a JOIN "Estudiantes" e ON e."Id_Estudiante"=a."Id_Estudiante" '
                     'WHERE a."Id_Estudiante"=ANY(%s) AND EXISTS ('
                     'SELECT 1 FROM "Estudiante_Tutor" et JOIN "Tutores" t ON t."Id_Tutor"=et."Id_Tutor" '
-                    'WHERE et."Id_Estudiante"=e."Id_Estudiante" AND et."Autorizado"=TRUE AND t.auth_user_id=%s) '
-                    'ORDER BY a."Fecha" DESC LIMIT 50', (ids, usuario["id"]),
+                    'WHERE et."Id_Estudiante"=e."Id_Estudiante" AND et."Autorizado"=TRUE AND t.auth_user_id=%s)'
+                    ') registros WHERE numero<=50 ORDER BY "Fecha" DESC,"Hora_Entrada" DESC NULLS LAST',
+                    (ids, usuario["id"]),
                 )
                 asistencias = cur.fetchall()
         return {

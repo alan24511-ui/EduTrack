@@ -1,8 +1,8 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Layout } from '../../components/layout/layout';
-import { AsistenciaRegistro, EduTrackDataService } from '../../services/edutrack-data.service';
+import { AsistenciaRegistro, EduTrackDataService, EventoLector } from '../../services/edutrack-data.service';
 import { mensajeDeError } from '../../utils/errores';
 
 @Component({
@@ -10,17 +10,21 @@ import { mensajeDeError } from '../../utils/errores';
   selector: 'app-historial',
   templateUrl: './historial.html',
 })
-export class Historial implements OnInit {
+export class Historial implements OnInit, OnDestroy {
   readonly filas = signal<AsistenciaRegistro[]>([]);
   readonly error = signal<string | null>(null);
   readonly cargando = signal(false);
   readonly grupos = signal<string[]>([]);
   readonly estados = signal<string[]>([]);
+  readonly eventosLector = signal<EventoLector[]>([]);
   desde = '';
   hasta = '';
   q = '';
   grupo = '';
   estado = '';
+  private ultimoEventoLector = 0;
+  private eventosTimer: ReturnType<typeof setInterval> | null = null;
+  private eventosPollingDisponible = true;
   constructor(private readonly api: EduTrackDataService) {}
   ngOnInit(): void {
     this.api.estudiantes().subscribe({
@@ -28,6 +32,30 @@ export class Historial implements OnInit {
       error: (e) => this.error.set(mensajeDeError(e)),
     });
     this.buscar();
+    this.consultarEventosLector();
+    this.eventosTimer = setInterval(() => this.consultarEventosLector(), 3000);
+  }
+  ngOnDestroy(): void { if (this.eventosTimer) clearInterval(this.eventosTimer); }
+
+  private consultarEventosLector(): void {
+    if (!this.eventosPollingDisponible) return;
+    this.api.eventosLector(this.ultimoEventoLector).subscribe({
+      next: (response) => {
+        this.ultimoEventoLector = response.lastId;
+        if (!response.eventos.length) return;
+        this.eventosLector.update((actuales) => [...response.eventos, ...actuales].slice(0, 5));
+        if (response.eventos.some((e) => e.resultado === 'ENTRADA_REGISTRADA' || e.resultado === 'SALIDA_REGISTRADA')) this.buscar();
+      },
+      error: () => { this.eventosPollingDisponible = false; },
+    });
+  }
+
+  claseEvento(resultado: EventoLector['resultado']): string {
+    if (resultado === 'ENTRADA_REGISTRADA') return 'alert-success';
+    if (resultado === 'SALIDA_REGISTRADA') return 'alert-primary';
+    if (resultado === 'LECTURA_DUPLICADA') return 'alert-secondary';
+    if (resultado === 'ASISTENCIA_COMPLETA') return 'alert-info';
+    return 'alert-danger';
   }
 
   get visibles(): AsistenciaRegistro[] {

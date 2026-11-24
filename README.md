@@ -1,6 +1,6 @@
 # EduTrack
 
-Sistema escolar de gestión de estudiantes y asistencia. El frontend es Angular standalone con Bootstrap; la API es FastAPI y usa PostgreSQL/Supabase. FastAPI administra el Arduino UNO + RC522 conectado por USB serial y permite asociar credenciales desde Alumnos.
+Sistema escolar de gestión de estudiantes y asistencia. El frontend es Angular standalone con Bootstrap; la API es FastAPI y usa PostgreSQL/Supabase. Un receptor Bluetooth HC-05 entrega las lecturas del Arduino UNO + RC522 a FastAPI; desde Alumnos también se pueden asociar credenciales por Bluetooth.
 
 ## Estado
 
@@ -10,7 +10,7 @@ El backend contiene operaciones de estudiantes, tarjetas, asistencias, historial
 
 - Node.js y npm compatibles con Angular del proyecto.
 - Python 3.11 o posterior para backend; PostgreSQL accesible y proyecto Supabase con Auth habilitado.
-- Lector: Arduino UNO/Nano, RC522, cables SPI y USB; el RC522 se alimenta a 3.3 V.
+- Lector: Arduino UNO/Nano, RC522 y HC-05; el RC522 se alimenta a 3.3 V.
 
 ## Frontend
 
@@ -33,11 +33,11 @@ cp .env.example .env
 uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-La API queda en `http://localhost:8000`; Swagger en `/docs`. Configura `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_NAME`, `DATABASE_USER`, `DATABASE_PASSWORD`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `CORS_ORIGINS`, `RFID_INGEST_TOKEN` y `ARDUINO_DEVICE_CODE` en el entorno/backend. `ARDUINO_PORT` permite fijar el puerto USB (vacío = autodetección) y `ARDUINO_BAUDRATE` usa 9600 por omisión. No publiques secretos.
+La API queda en `http://localhost:8000`; Swagger en `/docs`. Configura `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_NAME`, `DATABASE_USER`, `DATABASE_PASSWORD`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `CORS_ORIGINS` y `RFID_INGEST_TOKEN` en el entorno/backend. El receptor usa el código de un dispositivo ya registrado y activo. No publiques secretos.
 
 ## Lector Arduino + RC522
 
-Carga el firmware Arduino y conecta el UNO por USB a la computadora donde se ejecuta FastAPI. La API inicia su lector serial automáticamente; no inicies `reader_service/reader_service.py` ni dejes abierto Serial Monitor porque ocuparían el puerto. Consulta [HARDWARE.md](HARDWARE.md) para cableado, arranque y prueba física.
+Carga `reader_service/arduino/lector_rfid/lector_rfid.ino` al Arduino con el programador de la placa. En operación, el HC-05 transmite al receptor Bluetooth por RFCOMM; FastAPI no se conecta al lector por cable. Consulta [HARDWARE.md](HARDWARE.md) para cableado, arranque y prueba física.
 
 ## Servicios cloud y despliegue
 

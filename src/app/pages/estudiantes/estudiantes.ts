@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Sidebar } from '../../components/sidebar/sidebar';
-import { EduTrackDataService, Estudiante } from '../../services/edutrack-data.service';
+import { EduTrackDataService, Estudiante, EventoLector } from '../../services/edutrack-data.service';
 import { mensajeDeError } from '../../utils/errores';
 import { Subscription } from 'rxjs';
 
@@ -19,10 +19,11 @@ export class Estudiantes implements OnInit, OnDestroy {
   readonly formularioVisible = signal(false);
   readonly tutoresAbiertos = signal<number | null>(null);
   readonly grupos = computed(() => [...new Set(this.lista().map((s) => s.grupo))].sort());
-  readonly lector = signal<{ conectado: boolean; puerto: string | null; lectorListo: boolean; capturando: boolean; error: string | null } | null>(null);
+  readonly lector = signal<{ conectado: boolean; estado: 'conectado' | 'desconectado' | 'error'; tipo: string; puerto: string | null; baud: number; lectorListo: boolean; capturando: boolean; error: string | null; ultimoContacto: number | null; timeoutSegundos: number } | null>(null);
   readonly alumnoRFID = signal<Estudiante | null>(null);
   readonly estadoRFID = signal<'comprobando' | 'leyendo' | 'exito' | 'error' | 'cancelado'>('comprobando');
   readonly resultadoRFID = signal<string | null>(null);
+  readonly eventosAsistencia = signal<EventoLector[]>([]);
   readonly alumnoNuevo = signal<Estudiante | null>(null);
   buscar = '';
   grupoFiltro = '';
@@ -33,9 +34,14 @@ export class Estudiantes implements OnInit, OnDestroy {
   private solicitudLectura: Subscription | null = null;
   private capturaId: string | null = null;
   private estadoTimer: ReturnType<typeof setInterval> | null = null;
+  private ultimoEventoLector = 0;
+  private eventosPollingDisponible = true;
 
   constructor(private readonly api: EduTrackDataService) {}
-  ngOnInit(): void { this.cargar(); this.consultarLector(); this.estadoTimer = setInterval(() => this.consultarLector(), 5000); }
+  ngOnInit(): void {
+    this.cargar(); this.consultarLector(); this.consultarEventosAsistencia();
+    this.estadoTimer = setInterval(() => { this.consultarLector(); this.consultarEventosAsistencia(); }, 5000);
+  }
   ngOnDestroy(): void {
     if (this.estadoRFID() === 'leyendo' && this.capturaId) this.api.cancelarLecturaRFID(this.capturaId).subscribe({ error: () => undefined });
     this.solicitudLectura?.unsubscribe(); if (this.estadoTimer) clearInterval(this.estadoTimer);
@@ -52,7 +58,26 @@ export class Estudiantes implements OnInit, OnDestroy {
   }
 
   consultarLector(): void {
-    this.api.estadoLector().subscribe({ next: (estado) => this.lector.set(estado), error: (e) => this.lector.set({ conectado: false, lectorListo: false, puerto: null, capturando: false, error: mensajeDeError(e) }) });
+    this.api.estadoLector().subscribe({ next: (estado) => this.lector.set(estado), error: (e) => this.lector.set({ conectado: false, estado: 'error', tipo: 'Bluetooth HC-05', baud: 9600, ultimoContacto: null, timeoutSegundos: 45, lectorListo: false, puerto: null, capturando: false, error: mensajeDeError(e) }) });
+  }
+
+  private consultarEventosAsistencia(): void {
+    if (!this.eventosPollingDisponible) return;
+    this.api.eventosLector(this.ultimoEventoLector).subscribe({
+      next: (response) => {
+        this.ultimoEventoLector = response.lastId;
+        if (response.eventos.length) this.eventosAsistencia.update((actuales) => [...response.eventos, ...actuales].slice(0, 3));
+      },
+      error: () => { this.eventosPollingDisponible = false; },
+    });
+  }
+
+  claseEventoAsistencia(resultado: EventoLector['resultado']): string {
+    if (resultado === 'ENTRADA_REGISTRADA') return 'alert-success';
+    if (resultado === 'SALIDA_REGISTRADA') return 'alert-primary';
+    if (resultado === 'LECTURA_DUPLICADA') return 'alert-secondary';
+    if (resultado === 'ASISTENCIA_COMPLETA') return 'alert-info';
+    return 'alert-danger';
   }
 
   get visibles(): Estudiante[] {
@@ -103,8 +128,7 @@ export class Estudiantes implements OnInit, OnDestroy {
     this.estadoRFID.set('comprobando'); this.resultadoRFID.set(null);
     this.api.estadoLector().subscribe({
       next: (estado) => {
-        this.lector.set(estado);
-        if (!estado.conectado || !estado.lectorListo) { this.estadoRFID.set('error'); this.resultadoRFID.set(estado.error || 'Lector desconectado. Comprueba el cable USB y reintenta.'); return; }
+        if (!estado.conectado || !estado.lectorListo) { this.estadoRFID.set('error'); this.resultadoRFID.set(estado.error || 'El lector RFID no está disponible para captura de tarjeta.'); return; }
         this.estadoRFID.set('leyendo');
         const captureId = crypto.randomUUID();
         this.capturaId = captureId;
@@ -113,7 +137,7 @@ export class Estudiantes implements OnInit, OnDestroy {
           error: (e) => { if (this.alumnoRFID()?.id !== alumno.id || this.capturaId !== captureId) return; this.capturaId = null; this.estadoRFID.set('error'); this.resultadoRFID.set(mensajeDeError(e)); this.consultarLector(); },
         });
       },
-      error: (e) => { this.lector.set({ conectado: false, lectorListo: false, puerto: null, capturando: false, error: mensajeDeError(e) }); this.estadoRFID.set('error'); this.resultadoRFID.set('No fue posible consultar el estado del lector.'); },
+      error: (e) => { this.estadoRFID.set('error'); this.resultadoRFID.set('No fue posible consultar el lector: ' + mensajeDeError(e)); },
     });
   }
   cerrarAsociacion(): void {

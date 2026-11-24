@@ -12,17 +12,27 @@ import { mensajeDeError } from '../../utils/errores';
 })
 export class DashPapas implements OnInit {
   readonly datos = signal<DashboardTutor | null>(null);
+  readonly estudianteActivoId = signal<number | null>(null);
   readonly error = signal<string | null>(null);
   readonly cargando = signal(true);
   constructor(readonly auth: AuthService, private readonly api: EduTrackDataService) {}
 
   ngOnInit(): void {
     this.api.dashboardTutor().subscribe({
-      next: (data) => { this.datos.set(data); this.cargando.set(false); },
+      next: (data) => { this.datos.set(data); this.estudianteActivoId.set(data.estudiantes[0]?.id ?? null); this.cargando.set(false); },
       error: (error: unknown) => { this.error.set(mensajeDeError(error)); this.cargando.set(false); },
     });
   }
   iniciales(nombre: string | undefined): string {
     return (nombre ?? '').split(/\s+/).filter(Boolean).slice(0, 2).map((parte) => parte[0]).join('').toUpperCase();
+  }
+
+  cambiarEstudiante(id: string): void {
+    this.estudianteActivoId.set(id ? Number(id) : null);
+  }
+
+  asistenciasActivas(datos: DashboardTutor): DashboardTutor['asistencias'] {
+    const id = this.estudianteActivoId();
+    return id === null ? datos.asistencias : datos.asistencias.filter((registro) => registro.idEstudiante === id);
   }
 }

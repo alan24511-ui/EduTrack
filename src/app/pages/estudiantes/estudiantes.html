@@ -21,6 +21,13 @@
                     </div>
                 </header>
 
+                @for (evento of eventosAsistencia(); track evento.id) {
+                    <div class="alert {{ claseEventoAsistencia(evento.resultado) }} py-2 mb-2" role="status">
+                        <strong>{{ evento.estudiante || 'Lectura RFID' }}</strong>: {{ evento.mensaje }}
+                        <span class="small ms-2">{{ evento.fecha }} {{ evento.hora }}</span>
+                    </div>
+                }
+
                 <!-- Búsqueda y acción principal -->
                 <section class="row g-3 align-items-center justify-content-between mb-4">
                     <div class="col-12 col-lg-8 col-xxl-6">
@@ -37,9 +44,10 @@
                 @if (error()) { <div class="alert alert-danger" role="alert">{{ error() }}</div> }
                 @if (aviso()) { <div class="alert alert-success" role="status">{{ aviso() }}</div> }
                 <div class="d-flex align-items-center gap-2 small mb-3" role="status">
-                    <span class="rounded-circle" [class.bg-success]="lector()?.conectado" [class.bg-danger]="!lector()?.conectado" style="width:.65rem;height:.65rem" aria-hidden="true"></span>
-                    <span>{{ lector()?.conectado ? 'Lector RFID conectado' : 'Lector RFID desconectado' }}</span>
-                    @if (!lector()?.conectado) { <button type="button" class="btn btn-link btn-sm p-0" (click)="consultarLector()">Reintentar</button> }
+                    <span class="rounded-circle" [class.bg-success]="lector()?.estado === 'conectado'" [class.bg-warning]="lector()?.estado === 'error'" [class.bg-danger]="lector()?.estado === 'desconectado'" style="width:.65rem;height:.65rem" aria-hidden="true"></span>
+                    <span>{{ lector()?.estado === 'conectado' ? 'Conectado · ' + lector()?.tipo : lector()?.estado === 'error' ? 'Error de comunicación · ' + lector()?.tipo : 'Desconectado · ' + (lector()?.tipo || 'Bluetooth HC-05') }}</span>
+                    @if (lector()?.error) { <span class="text-secondary">{{ lector()?.error }}</span> }
+                    @if (lector()?.estado !== 'conectado') { <button type="button" class="btn btn-link btn-sm p-0" (click)="consultarLector()">Reintentar</button> }
                 </div>
                 @if (alumnoNuevo()) {
                     <div class="alert alert-info d-flex flex-wrap align-items-center justify-content-between gap-2" role="status">
@@ -99,9 +107,9 @@
             <div class="modal-header"><h2 class="modal-title fs-5" id="modal-rfid-titulo">Asociar tarjeta RFID</h2><button type="button" class="btn-close" aria-label="Cerrar" (click)="cerrarAsociacion()"></button></div>
             <div class="modal-body">
                 <p class="mb-3"><strong>Alumno:</strong> {{ alumno.nombre }} ({{ alumno.matricula }})</p>
-                <div class="d-flex align-items-center gap-2 mb-3" role="status"><span class="rounded-circle" [class.bg-success]="lector()?.conectado" [class.bg-danger]="!lector()?.conectado" style="width:.7rem;height:.7rem"></span><span>{{ lector()?.conectado ? 'Lector conectado' : 'Lector desconectado' }}{{ lector()?.puerto ? ' · ' + lector()?.puerto : '' }}</span></div>
+                <div class="d-flex align-items-center gap-2 mb-3" role="status"><span class="rounded-circle" [class.bg-success]="lector()?.estado === 'conectado'" [class.bg-warning]="lector()?.estado === 'error'" [class.bg-danger]="lector()?.estado === 'desconectado'" style="width:.7rem;height:.7rem"></span><span>{{ lector()?.estado === 'conectado' ? 'Conectado' : lector()?.estado === 'error' ? 'Error de comunicación' : 'Desconectado' }} · {{ lector()?.tipo || 'Bluetooth HC-05' }}{{ lector()?.puerto ? ' · ' + lector()?.puerto : '' }} ({{ lector()?.baud || 9600 }} baudios)</span></div>
                 @if (estadoRFID() === 'comprobando') { <div class="d-flex align-items-center gap-2" role="status"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span>Comprobando lector…</div> }
-                @if (estadoRFID() === 'leyendo') { <div class="alert alert-primary mb-0" role="status"><span class="spinner-grow spinner-grow-sm me-2" aria-hidden="true"></span>Acerca la credencial al lector RC522.</div> }
+                @if (estadoRFID() === 'leyendo') { <div class="alert alert-primary mb-0" role="status"><span class="spinner-grow spinner-grow-sm me-2" aria-hidden="true"></span>Acerca la credencial al lector RC522 conectado por Bluetooth.</div> }
                 @if (estadoRFID() === 'exito') { <div class="alert alert-success mb-0" role="status">{{ resultadoRFID() }}</div> }
                 @if (estadoRFID() === 'error') { <div class="alert alert-danger" role="alert">{{ resultadoRFID() }}</div><button type="button" class="btn btn-outline-primary" (click)="iniciarLectura()">Reintentar</button> }
             </div>
