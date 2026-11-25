@@ -25,9 +25,8 @@ export class Sidebar {
   private readonly itemsAdministrador: ItemMenu[] = [
     { texto: 'Inicio', icono: 'img/v38_50.png', ruta: '/admin' },
     { texto: 'Estudiantes', icono: 'img/v38_51.png', ruta: '/estudiantes' },
-    { texto: 'Tarjetas', icono: 'img/v38_52.png', ruta: '/tarjetas' },
+    { texto: 'Importar estudiantes', icono: 'img/v38_51.png', ruta: '/admin/importar-estudiantes' },
     { texto: 'Historial', icono: 'img/v38_53.png', ruta: '/historial' },
-    { texto: 'Reportes (no disponible)', icono: 'img/v38_54.png' },
     { texto: 'Horarios', icono: 'img/v38_56.png', ruta: '/horarios' },
     { texto: 'Configuración', icono: 'img/v38_55.png', ruta: '/configuracion' },
   ];

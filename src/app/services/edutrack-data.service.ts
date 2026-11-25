@@ -75,6 +75,11 @@ export interface HorarioPublicado {
   tolerancia: number;
 }
 
+export interface FilaImportacionEstudiante {
+  fila: number; matricula: string; nombre: string; apellidos: string; grupo: string;
+  valida: boolean; errores: string[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class EduTrackDataService {
   private readonly base = environment.apiUrl;
@@ -133,4 +138,11 @@ export class EduTrackDataService {
     return this.http.patch<HorarioPublicado>(`${this.base}/horarios/${id}`, body);
   }
   eliminarHorario(id: number) { return this.http.delete<void>(`${this.base}/horarios/${id}`); }
+  validarImportacionEstudiantes(archivo: File) {
+    const datos = new FormData(); datos.append('archivo', archivo);
+    return this.http.post<{ filas: FilaImportacionEstudiante[]; validas: number; conErrores: number }>(`${this.base}/estudiantes/importar/validar`, datos);
+  }
+  confirmarImportacionEstudiantes(filas: FilaImportacionEstudiante[]) {
+    return this.http.post<{ importados: number; omitidos: number; detalleOmitidos: { fila: number; matricula: string; motivo: string }[] }>(`${this.base}/estudiantes/importar/confirmar`, filas);
+  }
 }

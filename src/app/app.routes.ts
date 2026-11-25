@@ -12,6 +12,7 @@ export const routes: Routes = [
   { path: 'tarjetas', loadComponent: () => import('./pages/tarjetas/tarjetas').then((m) => m.Tarjetas), canActivate: [adminGuard] },
   { path: 'historial', loadComponent: () => import('./pages/historial/historial').then((m) => m.Historial), canActivate: [authGuard] },
   { path: 'admin', loadComponent: () => import('./pages/admin/admin').then((m) => m.Admin), canActivate: [adminGuard] },
+  { path: 'admin/importar-estudiantes', loadComponent: () => import('./pages/importar-estudiantes/importar-estudiantes').then((m) => m.ImportarEstudiantes), canActivate: [adminGuard] },
   { path: 'dashboard-papas', loadComponent: () => import('./pages/dash-papas/dash-papas').then((m) => m.DashPapas), canActivate: [tutorGuard] },
   { path: 'configuracion-papas', loadComponent: () => import('./pages/configuracion-papas/configuracion-papas').then((m) => m.ConfiguracionPapas), canActivate: [tutorGuard] },
   { path: 'configuracion', loadComponent: () => import('./pages/configuracion-plantel/configuracion-plantel').then((m) => m.ConfiguracionPlantel), canActivate: [adminGuard] },

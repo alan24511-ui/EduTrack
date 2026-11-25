@@ -16,7 +16,7 @@ from psycopg import Error as PsycopgError
 
 from app.config import obtener_settings
 from app.database import obtener_conexion
-from app.asistencia_reglas import siguiente_evento
+from app.asistencia_reglas import clasificar_entrada, siguiente_evento
 from app.schemas import LecturaRFIDEntrada, RFIDCapturaEntrada, RFIDUIDCaptura
 from app.firebase_service import notificar_tutores_estudiante
 from app.security import usuario_administrador
@@ -243,13 +243,31 @@ def procesar_lectura(datos: LecturaRFIDEntrada, background_tasks: BackgroundTask
             entrada = asistencia[1] if asistencia else None
             salida = asistencia[2] if asistencia else None
             siguiente = siguiente_evento(entrada, salida)
+            horario = None
+            if siguiente == "entrada":
+                if not grupo or not grupo.strip():
+                    _registrar_acceso(cur, ahora, id_dispositivo, id_estudiante, id_tarjeta, "lectura", "estudiante_sin_grupo")
+                    return respuesta("HORARIO_NO_CONFIGURADO", "El estudiante no tiene un grupo asignado.", nombre)
+                dias = ("lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo")
+                cur.execute(
+                    'SELECT "Hora_de_entrada", "Tolerancia" FROM "Horarios" '
+                    'WHERE translate(lower("Dia_semana"), \'áéíóú\', \'aeiou\')=%s '
+                    'AND lower(btrim("Grupo"))=lower(btrim(%s)) LIMIT 1',
+                    (dias[ahora.weekday()], grupo),
+                )
+                horario = cur.fetchone()
+                if horario is None:
+                    _registrar_acceso(cur, ahora, id_dispositivo, id_estudiante, id_tarjeta, "lectura", "horario_no_configurado")
+                    return respuesta("HORARIO_NO_CONFIGURADO", "No hay horario configurado para el grupo y día de hoy.", nombre)
             if asistencia is None:
-                cur.execute('INSERT INTO "Asistencia" ("Asistencia", "Estado", "Fecha", "Hora_Entrada", "Id_Estudiante") VALUES (TRUE, %s, %s, %s, %s) RETURNING "id_asistencia"', ("presente", ahora.date(), ahora, id_estudiante))
+                estado = clasificar_entrada(ahora, horario[0], int(horario[1] or 0))
+                cur.execute('INSERT INTO "Asistencia" ("Asistencia", "Estado", "Fecha", "Hora_Entrada", "Id_Estudiante") VALUES (TRUE, %s, %s, %s, %s) RETURNING "id_asistencia"', (estado, ahora.date(), ahora, id_estudiante))
                 id_asistencia = cur.fetchone()[0]
                 evento, resultado = "entrada", "registrada"
             elif siguiente == "entrada":
                 id_asistencia = asistencia[0]
-                cur.execute('UPDATE "Asistencia" SET "Asistencia"=TRUE, "Estado"=%s, "Hora_Entrada"=%s WHERE "id_asistencia"=%s', ("presente", ahora, id_asistencia))
+                estado = clasificar_entrada(ahora, horario[0], int(horario[1] or 0))
+                cur.execute('UPDATE "Asistencia" SET "Asistencia"=TRUE, "Estado"=%s, "Hora_Entrada"=%s WHERE "id_asistencia"=%s', (estado, ahora, id_asistencia))
                 evento, resultado = "entrada", "registrada"
             elif siguiente == "salida":
                 id_asistencia = asistencia[0]
@@ -261,17 +279,7 @@ def procesar_lectura(datos: LecturaRFIDEntrada, background_tasks: BackgroundTask
 
             _registrar_acceso(cur, ahora, id_dispositivo, id_estudiante, id_tarjeta, evento, resultado)
             if evento == "entrada" and resultado == "registrada":
-                dias = ("lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo")
-                cur.execute(
-                    'SELECT "Hora_de_entrada", "Tolerancia" FROM "Horarios" '
-                    'WHERE translate(lower("Dia_semana"), \'áéíóú\', \'aeiou\')=%s '
-                    'AND lower("Grupo")=lower(%s) LIMIT 1',
-                    (dias[ahora.weekday()], grupo),
-                )
-                horario = cur.fetchone()
-                tardia = bool(horario and ahora.time().replace(tzinfo=None) > (
-                    datetime.combine(ahora.date(), horario[0]) + timedelta(minutes=int(horario[1] or 0))
-                ).time())
+                tardia = estado == "retardo"
                 categoria = "entrada_con_retardo" if tardia else "entrada_registrada"
                 titulo = "Entrada con retardo" if tardia else "Entrada registrada"
                 texto = f"Se registró la entrada de {nombre} a las {ahora.strftime('%H:%M')}."
