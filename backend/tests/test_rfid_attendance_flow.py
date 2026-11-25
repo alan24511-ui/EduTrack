@@ -1,5 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
 from threading import Lock
 from types import SimpleNamespace
 from zoneinfo import ZoneInfo
@@ -24,6 +24,7 @@ class BaseDatosFalsa:
             "04123458": (11, 3, None, date(2020, 1, 2)),
         }
         self.asistencias = {}
+        self.horarios = {"a": (time(7), 10), "b": (time(7), 0)}
         self.accesos = []
         self.bloqueos = {3: Lock(), 4: Lock()}
         self.siguiente_id = 40
@@ -87,7 +88,8 @@ class CursorFalso:
         elif 'INSERT INTO "Registros_accesos"' in sql:
             self.db.accesos.append(params)
         elif 'SELECT "Hora_de_entrada"' in sql:
-            self.resultado = None
+            entrada = next((param for param in params if isinstance(param, str) and param.lower() in {"a", "b"}), None)
+            self.resultado = self.db.horarios.get((entrada or "").lower())
 
     def fetchone(self): return self.resultado
 
@@ -130,6 +132,34 @@ def test_primera_lectura_registra_entrada(monkeypatch):
     assert r["resultado"] == "ENTRADA_REGISTRADA"
     assert r["evento"] == "ENTRADA" and r["estudiante"] == "Ana"
     assert len(db.asistencias) == 1
+
+
+def test_entrada_guarda_retardo_solo_un_minuto_despues_del_limite(monkeypatch):
+    db = BaseDatosFalsa(); db.ahora = datetime(2026, 11, 23, 7, 10, tzinfo=ZONA); preparar(monkeypatch, db)
+    leer("04123456")
+    assert next(iter(db.asistencias.values()))[4] == "presente"
+    db = BaseDatosFalsa(); db.ahora = datetime(2026, 11, 23, 7, 11, tzinfo=ZONA); preparar(monkeypatch, db)
+    leer("04123456")
+    assert next(iter(db.asistencias.values()))[4] == "retardo"
+
+
+def test_grupos_aplican_horarios_independientes(monkeypatch):
+    db = BaseDatosFalsa(); db.ahora = datetime(2026, 11, 23, 7, 5, tzinfo=ZONA); preparar(monkeypatch, db)
+    leer("04123456"); leer("04123457")
+    estados = {key[0]: value[4] for key, value in db.asistencias.items()}
+    assert estados == {3: "presente", 4: "retardo"}
+
+
+def test_estudiante_sin_grupo_no_recibe_asistencia_incorrecta(monkeypatch):
+    db = BaseDatosFalsa(); db.estudiantes[3] = ("Ana", "M1", ""); preparar(monkeypatch, db)
+    assert leer("04123456")["resultado"] == "HORARIO_NO_CONFIGURADO"
+    assert not db.asistencias
+
+
+def test_grupo_sin_horario_no_recibe_asistencia(monkeypatch):
+    db = BaseDatosFalsa(); db.horarios.clear(); preparar(monkeypatch, db)
+    assert leer("04123456")["resultado"] == "HORARIO_NO_CONFIGURADO"
+    assert not db.asistencias
 
 
 def test_segunda_lectura_despues_del_debounce_registra_salida(monkeypatch):
