@@ -11,6 +11,15 @@ import { mensajeDeError } from '../../utils/errores';
   templateUrl: './horarios.html',
 })
 export class Horarios implements OnInit {
+  readonly diasSemana = [
+    { valor: 'lunes', etiqueta: 'Lunes' },
+    { valor: 'martes', etiqueta: 'Martes' },
+    { valor: 'miercoles', etiqueta: 'Miércoles' },
+    { valor: 'jueves', etiqueta: 'Jueves' },
+    { valor: 'viernes', etiqueta: 'Viernes' },
+    { valor: 'sabado', etiqueta: 'Sábado' },
+    { valor: 'domingo', etiqueta: 'Domingo' },
+  ];
   readonly horarios = signal<HorarioPublicado[]>([]);
   readonly error = signal<string | null>(null);
   readonly mensaje = signal<string | null>(null);
@@ -33,7 +42,8 @@ export class Horarios implements OnInit {
   }
   editar(h: HorarioPublicado): void {
     this.editando.set(h.id);
-    this.formulario.set({ diaSemana: h.diaSemana, grupo: h.grupo, horaEntrada: h.horaEntrada, horaSalida: h.horaSalida, tolerancia: h.tolerancia });
+    const diaSemana = h.diaSemana.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase();
+    this.formulario.set({ diaSemana, grupo: h.grupo, horaEntrada: h.horaEntrada, horaSalida: h.horaSalida, tolerancia: h.tolerancia });
   }
   cancelarEdicion(): void {
     this.editando.set(null);

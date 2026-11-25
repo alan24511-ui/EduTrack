@@ -1,6 +1,7 @@
 """Consulta de horarios publicados y operaciones administrativas."""
 
 from datetime import time
+import unicodedata
 
 from fastapi import APIRouter, Depends, HTTPException
 from psycopg import Error as PsycopgError
@@ -10,6 +11,14 @@ from app.schemas import HorarioActualizar, HorarioCrear
 from app.security import obtener_rol, usuario_verificado
 
 router = APIRouter(prefix="/horarios", tags=["Horarios"])
+DÍAS_SEMANA = {"lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"}
+
+
+def _normalizar_dia(dia: str) -> str:
+    sin_acentos = "".join(c for c in unicodedata.normalize("NFD", dia.strip().lower()) if not unicodedata.combining(c))
+    if sin_acentos not in DÍAS_SEMANA:
+        raise HTTPException(status_code=422, detail="Selecciona un día válido de la semana.")
+    return sin_acentos
 
 
 def _admin(usuario: dict) -> None:
@@ -38,10 +47,11 @@ def crear_horario(datos: HorarioCrear, usuario: dict = Depends(usuario_verificad
     _admin(usuario)
     if not datos.dia_semana.strip() or not datos.grupo.strip():
         raise HTTPException(status_code=422, detail="El día y el grupo son obligatorios.")
+    dia = _normalizar_dia(datos.dia_semana)
     try:
         with obtener_conexion() as conn, conn.cursor() as cur:
             cur.execute('INSERT INTO "Horarios" ("Dia_semana","Grupo","Hora_de_entrada","Hora_de_salida","Tolerancia") VALUES (%s,%s,%s,%s,%s) RETURNING "id_Horario","Dia_semana","Grupo","Hora_de_entrada","Hora_de_salida","Tolerancia"',
-                        (datos.dia_semana.strip(), datos.grupo.strip(), time.fromisoformat(datos.hora_de_entrada), time.fromisoformat(datos.hora_de_salida), datos.tolerancia))
+                        (dia, datos.grupo.strip(), time.fromisoformat(datos.hora_de_entrada), time.fromisoformat(datos.hora_de_salida), datos.tolerancia))
             row = cur.fetchone()
         return _salida(row)
     except PsycopgError as error:
@@ -65,6 +75,8 @@ def actualizar_horario(id_horario: int, datos: HorarioActualizar, usuario: dict 
         sets.append(f"{columnas[campo]}=%s")
         if campo in {"hora_de_entrada", "hora_de_salida"} and valor:
             valor = time.fromisoformat(valor)
+        if campo == "dia_semana" and valor:
+            valor = _normalizar_dia(valor)
         params.append(valor.strip() if isinstance(valor, str) else valor)
     if any(valor is None or (isinstance(valor, str) and not valor.strip()) for valor in cambios.values()):
         raise HTTPException(status_code=422, detail="El día y el grupo no pueden estar vacíos.")

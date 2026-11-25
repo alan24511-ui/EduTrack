@@ -89,7 +89,8 @@ class CursorFalso:
             self.db.accesos.append(params)
         elif 'SELECT "Hora_de_entrada"' in sql:
             entrada = next((param for param in params if isinstance(param, str) and param.lower() in {"a", "b"}), None)
-            self.resultado = self.db.horarios.get((entrada or "").lower())
+            dias = ("lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo")
+            self.resultado = self.db.horarios.get((entrada or "").lower()) if params[0] == dias[self.db.ahora.weekday()] else None
 
     def fetchone(self): return self.resultado
 

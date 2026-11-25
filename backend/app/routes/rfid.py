@@ -248,7 +248,10 @@ def procesar_lectura(datos: LecturaRFIDEntrada, background_tasks: BackgroundTask
                 if not grupo or not grupo.strip():
                     _registrar_acceso(cur, ahora, id_dispositivo, id_estudiante, id_tarjeta, "lectura", "estudiante_sin_grupo")
                     return respuesta("HORARIO_NO_CONFIGURADO", "El estudiante no tiene un grupo asignado.", nombre)
-                dias = ("lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo")
+                # El campo de la base puede contener miercoles/miércoles y
+                # sabado/sábado. La consulta normaliza lo guardado, así que el
+                # valor de comparación también debe ir sin acentos.
+                dias = ("lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo")
                 cur.execute(
                     'SELECT "Hora_de_entrada", "Tolerancia" FROM "Horarios" '
                     'WHERE translate(lower("Dia_semana"), \'áéíóú\', \'aeiou\')=%s '
