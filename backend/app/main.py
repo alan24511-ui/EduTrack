@@ -24,7 +24,12 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=obtener_settings().lista_cors_origins,
+    # El dominio de producción también queda permitido aunque CORS_ORIGINS
+    # se haya sobrescrito en Render. Está declarado en render.yaml.
+    allow_origins=list(dict.fromkeys([
+        *obtener_settings().lista_cors_origins,
+        "https://edu-track-c4ka-goysju993-edu-track9.vercel.app",
+    ])),
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
     allow_headers=["Accept", "Authorization", "Content-Type"],
