@@ -22,7 +22,7 @@ services:
       - key: SUPABASE_ANON_KEY
         sync: false
       - key: CORS_ORIGINS
-        value: https://edu-track-c4ka-goysju993-edu-track9.vercel.app
+        value: https://edu-track-c4ka.vercel.app
       - key: RFID_INGEST_TOKEN
         sync: false
       - key: RFID_DEBOUNCE_SECONDS

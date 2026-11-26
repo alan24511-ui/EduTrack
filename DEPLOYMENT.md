@@ -65,9 +65,9 @@ No ejecutes esta prueba con tutores o estudiantes reales. Las ausencias requiere
 
 ## Render y Vercel
 
-Render usa `render.yaml`, raíz `backend`, `pip install -r requirements.txt`, Uvicorn y `/health`. Completa variables PostgreSQL, Supabase, CORS, RFID, Resend y Firebase según aplique. `/health` no verifica credenciales opcionales.
+El frontend de producción es `https://edu-track-c4ka.vercel.app` y la API de Render es `https://edutrack-api-i61z.onrender.com`. Render usa `render.yaml`, raíz `backend`, `pip install -r requirements.txt`, Uvicorn y `/health`. `CORS_ORIGINS` permite el dominio de producción y `http://localhost:4200`; completa variables PostgreSQL, Supabase, RFID, Resend y Firebase según aplique. `/health` no verifica credenciales opcionales.
 
-Vercel usa `npm run build:vercel` y output `dist/EduTrack/browser`; configura `EDUTRACK_API_URL` y las siete variables públicas `FIREBASE_WEB_*` en Preview/Production. El build requiere `EDUTRACK_API_URL`; Firebase puede omitirse para dejar push inactivo.
+Vercel usa `npm run build:vercel` y output `dist/EduTrack/browser`; configura `EDUTRACK_API_URL=https://edutrack-api-i61z.onrender.com` y las siete variables públicas `FIREBASE_WEB_*` en Preview/Production. El build requiere `EDUTRACK_API_URL`; Firebase puede omitirse para dejar push inactivo.
 
 ## Supabase Auth y correo
 

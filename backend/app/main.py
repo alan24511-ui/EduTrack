@@ -28,7 +28,7 @@ app.add_middleware(
     # se haya sobrescrito en Render. Está declarado en render.yaml.
     allow_origins=list(dict.fromkeys([
         *obtener_settings().lista_cors_origins,
-        "https://edu-track-c4ka-goysju993-edu-track9.vercel.app",
+        "https://edu-track-c4ka.vercel.app",
     ])),
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],

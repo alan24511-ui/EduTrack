@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     email_from: str = ""
 
     # --- CORS ---
-    cors_origins: str = "http://localhost:4200,https://edu-track-c4ka-goysju993-edu-track9.vercel.app"
+    cors_origins: str = "http://localhost:4200,https://edu-track-c4ka.vercel.app"
 
     @property
     def lista_cors_origins(self) -> list[str]:
