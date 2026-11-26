@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     supabase_url: str = ""
     supabase_anon_key: str = ""
     rfid_ingest_token: str = ""
+    ingesta_token: str = Field(default="", validation_alias="INGESTA_TOKEN")
     rfid_debounce_seconds: int = Field(default=5, ge=1, validation_alias="RFID_DEBOUNCE_SECONDS")
 
     # --- Servicios opcionales ---

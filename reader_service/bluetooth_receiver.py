@@ -29,13 +29,16 @@ def extraer_uid(linea: str) -> str | None:
 class BluetoothReceiver:
     def __init__(self, port: str, baud: int, api_url: str, device_code: str,
                  token: str, reconnect_seconds: float = 3, duplicate_seconds: float = 2,
-                 heartbeat_seconds: float = 15):
+                 heartbeat_seconds: float = 15, reader_token: str | None = None):
         self.port = port
         self.baud = baud
         self.endpoint = api_url.rstrip("/") + "/rfid/lecturas"
         self.capture_endpoint = api_url.rstrip("/") + "/rfid/reader/capture"
         self.device_code = device_code
         self.token = token
+        # Heartbeat/captura conservan el mecanismo anterior; la ingesta usa
+        # exclusivamente EDUTRACK_INGESTA_TOKEN.
+        self.reader_token = reader_token or token
         self.reconnect_seconds = reconnect_seconds
         self.duplicate_seconds = duplicate_seconds
         self.heartbeat_endpoint = api_url.rstrip("/") + "/rfid/heartbeat"
@@ -52,7 +55,7 @@ class BluetoothReceiver:
             response = client.post(
                 self.heartbeat_endpoint,
                 params={"codigo_dispositivo": self.device_code, "tipo": "bluetooth"},
-                headers={"X-Reader-Token": self.token},
+                headers={"X-Reader-Token": self.reader_token},
                 timeout=5,
             )
             response.raise_for_status()
@@ -72,7 +75,7 @@ class BluetoothReceiver:
             capture_response = client.post(
                 self.capture_endpoint,
                 json={"uid": uid, "codigo_dispositivo": self.device_code},
-                headers={"X-Reader-Token": self.token},
+                headers={"X-Reader-Token": self.reader_token},
                 timeout=5,
             )
             capture_response.raise_for_status()
@@ -90,7 +93,7 @@ class BluetoothReceiver:
             response = client.post(
                 self.endpoint,
                 json={"uid": uid, "codigo_dispositivo": self.device_code},
-                headers={"X-Reader-Token": self.token},
+                headers={"X-Ingesta-Token": self.token},
                 timeout=10,
             )
             response.raise_for_status()
@@ -128,17 +131,19 @@ def main() -> None:
     parser.add_argument("--baud", type=int, default=int(os.getenv("EDUTRACK_BT_BAUD", "9600")))
     parser.add_argument("--api-url", default=os.getenv("EDUTRACK_API_URL", "http://localhost:8000"))
     parser.add_argument("--device-code", default=os.getenv("EDUTRACK_DEVICE_CODE", ""))
-    parser.add_argument("--token", default=os.getenv("EDUTRACK_RFID_TOKEN", ""))
+    parser.add_argument("--token", default=os.getenv("EDUTRACK_INGESTA_TOKEN", ""),
+                        help="Token permanente de ingesta (o EDUTRACK_INGESTA_TOKEN)")
     parser.add_argument("--reconnect-seconds", type=float, default=3)
     parser.add_argument("--heartbeat-seconds", type=float, default=15)
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     if not args.device_code or not args.token:
-        parser.error("Configura EDUTRACK_DEVICE_CODE y EDUTRACK_RFID_TOKEN (o los argumentos equivalentes).")
+        parser.error("Configura EDUTRACK_DEVICE_CODE y EDUTRACK_INGESTA_TOKEN (o los argumentos equivalentes).")
     if not 0 < args.heartbeat_seconds < 45 or args.reconnect_seconds <= 0:
         parser.error("El heartbeat debe ser mayor a cero y menor a 45 segundos; la reconexión debe ser mayor a cero.")
     BluetoothReceiver(args.port, args.baud, args.api_url, args.device_code, args.token,
-                      args.reconnect_seconds, heartbeat_seconds=args.heartbeat_seconds).run()
+                      args.reconnect_seconds, heartbeat_seconds=args.heartbeat_seconds,
+                      reader_token=os.getenv("EDUTRACK_RFID_TOKEN") or args.token).run()
 
 
 if __name__ == "__main__":

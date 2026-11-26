@@ -13,7 +13,8 @@ Completa `backend/.env.example` para desarrollo. No reemplaces ni compartas `bac
 | `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_NAME`, `DATABASE_USER`, `DATABASE_PASSWORD` | Render | PostgreSQL de Supabase. |
 | `SUPABASE_URL`, `SUPABASE_ANON_KEY` | Render | Validación de sesión con Supabase Auth. No requiere `service_role`. |
 | `CORS_ORIGINS` | Render | Dominios del frontend permitidos. |
-| `RFID_INGEST_TOKEN` | Render y equipo receptor Python | Autentica la ingesta del lector existente. |
+| `INGESTA_TOKEN` | Render | Secreto permanente para `POST /rfid/lecturas` (`X-Ingesta-Token`). |
+| `RFID_INGEST_TOKEN` | Render y equipo receptor Python | Conserva la autenticación previa de heartbeat y captura administrativa del lector. |
 | `RESEND_API_KEY`, `EMAIL_FROM` | Render | Correo iniciado por EduTrack. |
 | `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` | Render/backend local | Cuenta de servicio privada para Firebase Admin. La clave admite saltos de línea o `\\n` literales. |
 | `EDUTRACK_API_URL` | Vercel, build | URL pública de FastAPI. |
@@ -68,6 +69,37 @@ No ejecutes esta prueba con tutores o estudiantes reales. Las ausencias requiere
 El frontend de producción es `https://edu-track-c4ka.vercel.app` y la API de Render es `https://edutrack-api-i61z.onrender.com`. Render usa `render.yaml`, raíz `backend`, `pip install -r requirements.txt`, Uvicorn y `/health`. `CORS_ORIGINS` permite el dominio de producción y `http://localhost:4200`; completa variables PostgreSQL, Supabase, RFID, Resend y Firebase según aplique. `/health` no verifica credenciales opcionales.
 
 Vercel usa `npm run build:vercel` y output `dist/EduTrack/browser`; configura `EDUTRACK_API_URL=https://edutrack-api-i61z.onrender.com` y las siete variables públicas `FIREBASE_WEB_*` en Preview/Production. El build requiere `EDUTRACK_API_URL`; Firebase puede omitirse para dejar push inactivo.
+
+## Token permanente de ingesta RFID
+
+Genera un secreto aleatorio en una terminal local (no lo incluyas en el repositorio):
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(48))"
+```
+
+En Render, abre el servicio `edutrack-api` → **Environment** y agrega `INGESTA_TOKEN` con el secreto generado. Guarda y deja que Render redepliegue el backend. En la computadora o Raspberry Pi del receptor, exporta el mismo valor como `EDUTRACK_INGESTA_TOKEN`. El nombre de variable es distinto, pero el valor debe coincidir exactamente. El panel Angular no recibe este secreto. `POST /rfid/lecturas` devuelve 401 si falta o es incorrecto y 503 si el backend no tiene configurado `INGESTA_TOKEN`.
+
+Para iniciar el receptor, empareja el HC-05 y abre RFCOMM en una terminal (sustituye la dirección por la del módulo):
+
+```bash
+sudo rfcomm release 0 2>/dev/null || true
+sudo rfcomm connect 0 98:D3:32:11:6F:25 1
+```
+
+En otra terminal, configura el código de un dispositivo activo ya registrado y arranca el receptor:
+
+```bash
+cd /home/chato/EduTrack
+export EDUTRACK_API_URL=https://edutrack-api-i61z.onrender.com
+export EDUTRACK_DEVICE_CODE=CODIGO_DE_UN_DISPOSITIVO_ACTIVO
+export EDUTRACK_INGESTA_TOKEN='EL_MISMO_SECRETO_CONFIGURADO_EN_RENDER'
+python reader_service/bluetooth_receiver.py --port /dev/rfcomm0 --baud 9600
+```
+
+Si se usa la captura administrativa por Bluetooth, conserva además `RFID_INGEST_TOKEN` en Render y configura el valor correspondiente como `EDUTRACK_RFID_TOKEN` en el receptor. El token nuevo autentica las lecturas normales; el token legado mantiene heartbeat y captura.
+
+Para comprobar la autenticación sin registrar una asistencia, se puede inspeccionar en el log de Render que una solicitud enviada por el receptor alcanza el procesamiento; con un UID no asociado, la respuesta habitual es `TARJETA_NO_REGISTRADA`. Sin token la API responde 401. Rota el secreto generando otro, actualizando `INGESTA_TOKEN` en Render y `EDUTRACK_INGESTA_TOKEN` en cada receptor, y reiniciando ambos servicios; el valor anterior queda revocado al aplicar el cambio.
 
 ## Supabase Auth y correo
 

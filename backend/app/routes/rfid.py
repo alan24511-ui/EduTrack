@@ -139,6 +139,16 @@ def _validar_lector(x_reader_token: str):
         raise HTTPException(status_code=401, detail="Credencial del lector no válida.")
 
 
+def validar_token_ingesta(x_ingesta_token: str = Header(default="", alias="X-Ingesta-Token")) -> str:
+    """Autentica únicamente la recepción de lecturas RFID."""
+    esperado = obtener_settings().ingesta_token
+    if not esperado:
+        raise HTTPException(status_code=503, detail="La ingesta RFID no está configurada.")
+    if not secrets.compare_digest(esperado, x_ingesta_token):
+        raise HTTPException(status_code=401, detail="Credencial de ingesta no válida.")
+    return x_ingesta_token
+
+
 @router.post("/reader/capture")
 def capturar_uid_bluetooth(datos: RFIDUIDCaptura, x_reader_token: str = Header(default="")):
     """Entrega al flujo administrativo el UID recibido por HC-05 si hay captura abierta."""
@@ -187,8 +197,8 @@ def _registrar_acceso(cur, ahora, id_dispositivo, id_estudiante, id_tarjeta, eve
 
 
 @router.post("/lecturas")
-def procesar_lectura(datos: LecturaRFIDEntrada, background_tasks: BackgroundTasks, x_reader_token: str = Header(default="")):
-    _validar_lector(x_reader_token)
+def procesar_lectura(datos: LecturaRFIDEntrada, background_tasks: BackgroundTasks,
+                     x_ingesta_token: str = Depends(validar_token_ingesta)):
     uid = datos.uid.upper()
     ahora = datetime.now(ZONA)
     def respuesta(resultado, mensaje, nombre=None, evento=None, hora=None):

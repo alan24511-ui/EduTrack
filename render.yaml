@@ -25,6 +25,8 @@ services:
         value: https://edu-track-c4ka.vercel.app
       - key: RFID_INGEST_TOKEN
         sync: false
+      - key: INGESTA_TOKEN
+        sync: false
       - key: RFID_DEBOUNCE_SECONDS
         value: "5"
       - key: VINCULACION_CODIGO_EXPIRACION_MINUTOS

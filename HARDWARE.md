@@ -37,11 +37,12 @@ Carga `reader_service/arduino/lector_rfid/lector_rfid.ino` al Arduino. El sketch
 En `backend/.env` configura las credenciales habituales y:
 
 ```dotenv
-RFID_INGEST_TOKEN=un_token_aleatorio_compartido
+INGESTA_TOKEN=secreto_generado_localmente
+RFID_INGEST_TOKEN=token_legacy_para_heartbeat_y_captura
 RFID_DEBOUNCE_SECONDS=5
 ```
 
-El código debe identificar un dispositivo existente y activo en la tabla `"Dispositivos"`. El token debe coincidir con `EDUTRACK_RFID_TOKEN` del receptor.
+Genera `INGESTA_TOKEN` con `python -c "import secrets; print(secrets.token_urlsafe(48))"`. En el receptor exporta el mismo valor como `EDUTRACK_INGESTA_TOKEN`. El código debe identificar un dispositivo existente y activo en la tabla `"Dispositivos"`. `RFID_INGEST_TOKEN`/`EDUTRACK_RFID_TOKEN` mantienen el flujo previo de heartbeat y captura administrativa.
 
 ## Conectar el HC-05 en Fedora
 
@@ -63,11 +64,11 @@ source .venv-reader/bin/activate
 pip install -r reader_service/requirements.txt
 export EDUTRACK_API_URL=http://localhost:8000
 export EDUTRACK_DEVICE_CODE=CODIGO_DE_UN_DISPOSITIVO_EXISTENTE
-export EDUTRACK_RFID_TOKEN=EL_MISMO_RFID_INGEST_TOKEN_DEL_BACKEND
+export EDUTRACK_INGESTA_TOKEN=EL_MISMO_INGESTA_TOKEN_DEL_BACKEND
 python reader_service/bluetooth_receiver.py --port /dev/rfcomm0 --baud 9600
 ```
 
-El backend se inicia por separado desde `backend` con `uvicorn app.main:app --host 0.0.0.0 --port 8000`. Si corre en otra computadora, asigna su dirección accesible a `EDUTRACK_API_URL`. El receptor reintenta abrir RFCOMM cada tres segundos tras una desconexión.
+El backend se inicia por separado desde `backend` con `uvicorn app.main:app --host 0.0.0.0 --port 8000`. Si corre en otra computadora, asigna su dirección accesible a `EDUTRACK_API_URL`. El receptor reintenta abrir RFCOMM cada tres segundos tras una desconexión. Para confirmar el flujo, una lectura autenticada aparece en los eventos del lector; una tarjeta desconocida devuelve `TARJETA_NO_REGISTRADA`. La rotación requiere actualizar el mismo secreto en el backend y todos los receptores; el anterior deja de aceptarse.
 
 ## Probar asistencia y asociación
 

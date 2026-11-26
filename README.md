@@ -33,7 +33,7 @@ cp .env.example .env
 uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-La API queda en `http://localhost:8000`; Swagger en `/docs`. Configura `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_NAME`, `DATABASE_USER`, `DATABASE_PASSWORD`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `CORS_ORIGINS` y `RFID_INGEST_TOKEN` en el entorno/backend. El receptor usa el código de un dispositivo ya registrado y activo. No publiques secretos.
+La API queda en `http://localhost:8000`; Swagger en `/docs`. Configura `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_NAME`, `DATABASE_USER`, `DATABASE_PASSWORD`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `CORS_ORIGINS` e `INGESTA_TOKEN` en el entorno/backend. `POST /rfid/lecturas` exige `X-Ingesta-Token`; el receptor lo obtiene de `EDUTRACK_INGESTA_TOKEN`. No publiques secretos.
 
 ## Lector Arduino + RC522
 

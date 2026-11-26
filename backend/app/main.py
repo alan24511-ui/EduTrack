@@ -28,11 +28,12 @@ app.add_middleware(
     # se haya sobrescrito en Render. Está declarado en render.yaml.
     allow_origins=list(dict.fromkeys([
         *obtener_settings().lista_cors_origins,
+         "http://localhost:4200",
         "https://edu-track-c4ka.vercel.app",
     ])),
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
-    allow_headers=["Accept", "Authorization", "Content-Type"],
+    allow_headers=["Accept", "Authorization", "Content-Type", "X-Ingesta-Token"],
 )
 
 app.include_router(rutas_auth.router)
