@@ -26,8 +26,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=obtener_settings().lista_cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+    allow_headers=["Accept", "Authorization", "Content-Type"],
 )
 
 app.include_router(rutas_auth.router)
