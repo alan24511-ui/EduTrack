@@ -52,6 +52,7 @@ __pycache__/
 # Entorno virtual de FastAPI
 backend/.venv/
 reader_service/.venv/
+reader_service/.env
 reader_service/data/
 *.sqlite3
 *.sqlite3-shm

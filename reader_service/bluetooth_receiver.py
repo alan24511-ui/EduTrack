@@ -17,6 +17,21 @@ LINE_RE = re.compile(r"^UID:([0-9A-Fa-f]{8}(?:[0-9A-Fa-f]{6})?(?:[0-9A-Fa-f]{6})
 LOG = logging.getLogger("edutrack.bluetooth")
 
 
+def cargar_configuracion_local() -> None:
+    """Carga variables de reader_service/.env sin reemplazar las del entorno."""
+    config_path = os.path.join(os.path.dirname(__file__), ".env")
+    try:
+        with open(config_path, encoding="utf-8") as config_file:
+            for raw_line in config_file:
+                line = raw_line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, value = line.split("=", 1)
+                os.environ.setdefault(key.strip(), value.strip().strip("\"'"))
+    except FileNotFoundError:
+        pass
+
+
 def extraer_uid(linea: str) -> str | None:
     """Valida mensajes UID: de 4, 7 o 10 bytes y normaliza a mayúsculas."""
     match = LINE_RE.fullmatch(linea.strip())
@@ -123,6 +138,7 @@ class BluetoothReceiver:
 
 
 def main() -> None:
+    cargar_configuracion_local()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--port", default=os.getenv("EDUTRACK_BT_PORT", "/dev/rfcomm0"))
     parser.add_argument("--baud", type=int, default=int(os.getenv("EDUTRACK_BT_BAUD", "9600")))
